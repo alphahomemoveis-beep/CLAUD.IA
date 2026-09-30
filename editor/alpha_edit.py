@@ -98,8 +98,23 @@ def configura_fontes(cfg_fontes, pasta):
             arq = v["arquivo"] if os.path.isabs(v["arquivo"]) else os.path.join(base, v["arquivo"])
             if not os.path.exists(arq):
                 raise SystemExit(f"fonte não encontrada: {arq}")
-            FONTES[papel] = {"arquivo": arq, "peso": v.get("peso")}
+            FONTES[papel] = {"arquivo": arq, "peso": v.get("peso"), "largura": v.get("largura"),
+                             "maiusculas": bool(v.get("maiusculas")), "escala": float(v.get("escala", 1.0)),
+                             "espacamento": v.get("espacamento")}
     _fontes.clear()
+
+
+def caixa(txt, papel):
+    return txt.upper() if FONTES[papel].get("maiusculas") else txt
+
+
+def escala(papel):
+    return FONTES[papel].get("escala", 1.0)
+
+
+def espacamento(papel, padrao):
+    v = FONTES[papel].get("espacamento")
+    return padrao if v is None else v
 
 
 def fonte(tam, peso=None, italico=False, papel=None):
@@ -117,6 +132,8 @@ def fonte(tam, peso=None, italico=False, papel=None):
                 nome = e["name"].decode() if isinstance(e["name"], bytes) else str(e["name"])
                 if nome.lower().startswith(("weight", "wght")):
                     valores.append(min(max(peso, e["minimum"]), e["maximum"]))
+                elif nome.lower().startswith(("width", "wdth")) and info.get("largura"):
+                    valores.append(min(max(info["largura"], e["minimum"]), e["maximum"]))
                 else:
                     valores.append(e["default"])
             f.set_variation_by_axes(valores)
@@ -205,13 +222,17 @@ def cartao_final(est):
 
 def bloco_titulo(est, antes, destaque, depois):
     """Título grande: apoio fino em cima, palavra gigante, apoio embaixo."""
-    ft = fonte(est.titulo_tam, est.titulo_peso, papel="titulo")
-    tam = est.titulo_tam
-    while largura_texto(destaque, ft, est.titulo_track * tam / est.titulo_tam) > est.titulo_max_larg and tam > 60:
+    destaque = caixa(destaque, "titulo")
+    antes, depois = caixa(antes, "apoio"), caixa(depois, "apoio")
+    tam0 = round(est.titulo_tam * escala("titulo"))
+    trk0 = espacamento("titulo", est.titulo_track / est.k) * est.k
+    tam = tam0
+    ft = fonte(tam, est.titulo_peso, papel="titulo")
+    while largura_texto(destaque, ft, trk0 * tam / tam0) > est.titulo_max_larg and tam > 60:
         tam = int(tam * 0.93)
         ft = fonte(tam, est.titulo_peso, papel="titulo")
-    grande = desenha_texto(destaque, ft, est.titulo_track * tam / est.titulo_tam, sombra=0.42)
-    fa = fonte(est.apoio_tam, est.apoio_peso, papel="apoio")
+    grande = desenha_texto(destaque, ft, trk0 * tam / tam0, sombra=0.42)
+    fa = fonte(round(est.apoio_tam * escala("apoio")), est.apoio_peso, papel="apoio")
     partes = []
     if antes:
         partes.append(("a", desenha_texto(antes, fa, est.apoio_track, sombra=0.6)))
@@ -630,8 +651,15 @@ class Textos:
             if e["tipo"] == "titulo":
                 im = bloco_titulo(self.est, e.get("antes", ""), e["destaque"], e.get("depois", ""))
             else:
-                f = fonte(self.est.legenda_tam, self.est.legenda_peso, papel="legenda")
-                im = desenha_texto(e["texto"], f, self.est.legenda_track, sombra=0.62)
+                est = self.est
+                txt = caixa(e["texto"], "legenda")
+                tam = round(est.legenda_tam * escala("legenda"))
+                trk = espacamento("legenda", est.legenda_track / est.k) * est.k
+                f = fonte(tam, est.legenda_peso, papel="legenda")
+                while largura_texto(txt, f, trk) > 0.86 * est.W and tam > 20:
+                    tam = int(tam * 0.93)
+                    f = fonte(tam, est.legenda_peso, papel="legenda")
+                im = desenha_texto(txt, f, trk, sombra=0.62)
             self.cache[i] = im
         return self.cache[i]
 
