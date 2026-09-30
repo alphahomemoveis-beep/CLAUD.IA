@@ -1,0 +1,145 @@
+{
+  "nome": "chegada_apartamento",
+  "_obs": "Música provisória tirada do vídeo da garagem (19 s, entra em repetição). Troque por musica.mp3 quando chegar a faixa completa.",
+  "musica": "brutos/lv_0_20260930140150.mp4",
+  "musica_inicio": 0,
+  "sequencia": [
+    {
+      "arquivo": "brutos/lv_0_20260930135805.mp4",
+      "inicio": 3.3,
+      "fim": 5.9,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930094005.mp4",
+      "inicio": 1.5,
+      "fim": 3.8,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930140150.mp4",
+      "inicio": 16.8,
+      "fim": 19.2,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930105317.mp4",
+      "inicio": 0.2,
+      "fim": 4.4,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135805.mp4",
+      "inicio": 0.2,
+      "fim": 1.8,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/folhas_desfocadas-2.mp4",
+      "inicio": 2.8,
+      "fim": 5.8,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/folhas_desfocadas-2.mp4",
+      "inicio": 10.6,
+      "fim": 13.1,
+      "movimento": "sair"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135805.mp4",
+      "inicio": 7.3,
+      "fim": 10.0,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930105317.mp4",
+      "inicio": 5.0,
+      "fim": 8.5,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135704.mp4",
+      "inicio": 0.2,
+      "fim": 4.0,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135704.mp4",
+      "inicio": 4.0,
+      "fim": 7.5,
+      "movimento": "sair"
+    }
+  ],
+  "textos": [
+    {
+      "texto": "como chega um móvel de alto padrão",
+      "destaque": "alto padrão",
+      "inicio": 0.1,
+      "fim": 2.5
+    },
+    {
+      "texto": "a caminho da obra",
+      "inicio": 2.7,
+      "fim": 4.8
+    },
+    {
+      "texto": "subindo peça por peça",
+      "inicio": 5.0,
+      "fim": 7.2
+    },
+    {
+      "texto": "espaço pronto para receber",
+      "destaque": "pronto",
+      "inicio": 7.5,
+      "fim": 11.3
+    },
+    {
+      "texto": "organização por ambiente",
+      "destaque": "ambiente",
+      "inicio": 11.6,
+      "fim": 13.0
+    },
+    {
+      "texto": "LED canaleta 45 graus",
+      "destaque": "45 graus",
+      "inicio": 13.2,
+      "fim": 16.0
+    },
+    {
+      "texto": "tomada por dentro do móvel",
+      "destaque": "tomada",
+      "inicio": 16.2,
+      "fim": 18.5
+    },
+    {
+      "texto": "tudo conferido antes da montagem",
+      "destaque": "conferido",
+      "inicio": 18.7,
+      "fim": 21.2
+    },
+    {
+      "texto": "não é o ambiente que se adapta aos móveis",
+      "destaque": "ambiente",
+      "inicio": 21.4,
+      "fim": 24.7
+    },
+    {
+      "texto": "são os móveis que se adaptam a você",
+      "destaque": "você",
+      "inicio": 24.9,
+      "fim": 28.5
+    },
+    {
+      "texto": "chama a Alfa Home no Direct",
+      "inicio": 28.7,
+      "fim": 30.3
+    },
+    {
+      "texto": "vem orçar com quem entende",
+      "destaque": "entende",
+      "inicio": 30.4,
+      "fim": 32.0
+    }
+  ]
+}
