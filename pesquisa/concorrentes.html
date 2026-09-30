@@ -1,0 +1,249 @@
+<title>Radar de Concorrentes Alfa Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,500;112,800&family=Public+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: coluna única de leitura, gráfico e tabelas em faixas largas; tons de madeira e luz de LED quente */
+:root{
+  --bg:#f7f5f2; --surface:#ffffff; --fg:#26201c; --muted:#6b625a; --line:#e4ded6;
+  --accent:#a8641e; --accent-ink:#8a4f12; --chip:#efe7dc;
+  --display:"Archivo","Arial Black",system-ui,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#161311; --surface:#1f1b18; --fg:#eee8e1; --muted:#a89d92; --line:#342e29;
+  --accent:#c4843a; --accent-ink:#e2a867; --chip:#2b2521; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161311; --surface:#1f1b18; --fg:#eee8e1; --muted:#a89d92; --line:#342e29;
+  --accent:#c4843a; --accent-ink:#e2a867; --chip:#2b2521; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-inline:16px;padding-block:32px 64px}
+main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:48px}
+h1,h2{font-family:var(--display);font-stretch:112%;text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-weight:800;font-size:clamp(28px,5vw,44px);line-height:1.05;text-transform:uppercase}
+h2{font-weight:800;font-size:clamp(20px,3vw,26px);text-transform:uppercase;line-height:1.15}
+h3{font-size:17px;margin:0}
+p{margin:0;max-width:68ch}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header{display:flex;flex-direction:column;gap:12px;border-bottom:1px solid var(--line);padding-bottom:28px}
+.lead{font-size:18px;color:var(--fg)}
+.note{color:var(--muted);font-size:14px}
+section{display:flex;flex-direction:column;gap:16px}
+ul.points{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;max-width:72ch}
+ul.points b{color:var(--accent-ink)}
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:20px 16px;position:relative}
+.bars{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 12px;align-items:center}
+.bars .lbl{font-size:13px;line-height:1.25;min-width:0}
+.bars .lbl small{display:block;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.track{position:relative;height:22px;display:flex;align-items:center;gap:8px;min-width:0}
+.bar{height:14px;background:var(--accent);border-radius:0 4px 4px 0;min-width:2px;flex:none}
+.val{font-size:13px;font-variant-numeric:tabular-nums;color:var(--fg);white-space:nowrap}
+.track:hover .bar,.track:focus-visible .bar{filter:brightness(1.12)}
+.track:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px;border-radius:3px}
+.axis{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:12px;margin-top:10px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.axis .ticks{position:relative;height:16px;border-top:1px solid var(--line)}
+.axis .ticks span{position:absolute;top:2px;transform:translateX(-50%)}
+.axis .ticks span:first-child{transform:none}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12px;line-height:1.4;padding:6px 9px;border-radius:4px;max-width:240px;z-index:2}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface);position:sticky;top:0}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.n{text-align:right}
+tr:last-child td{border-bottom:0}
+.h{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--accent-ink);white-space:nowrap}
+.chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--chip);color:var(--fg);white-space:nowrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card p{font-size:15px}
+.card .ex{font-size:13px;color:var(--muted)}
+ol.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:12px;max-width:72ch}
+.sources{font-size:13px;color:var(--muted);columns:2 280px;gap:24px;padding-left:18px;margin:0}
+.sources li{break-inside:avoid;margin-bottom:6px}
+a{color:var(--accent-ink)}
+@media (max-width:560px){
+  .bars{grid-template-columns:1fr;gap:2px}
+  .bars .track{margin-bottom:8px}
+  .axis{grid-template-columns:1fr}
+  .axis>span:first-child{display:none}
+}
+@media (prefers-reduced-motion:no-preference){.bar{transition:filter .15s}}
+</style>
+
+<main>
+<header>
+  <span class="eyebrow">Pesquisa de concorrência · 30 de setembro de 2026</span>
+  <h1>Quem disputa o cliente de alto padrão nas redes</h1>
+  <p class="lead">Levantamento de marcas de móveis planejados, marcenarias de alto padrão e criadores de conteúdo de madeira no Instagram e no TikTok, com seguidores, engajamento, o que postam, o que viraliza e em que horário publicar.</p>
+  <p class="note">Os números vêm de buscas na web que exibem os dados públicos de cada perfil e de páginas da HypeAuditor. O acesso direto ao Instagram e aos sites de métricas estava bloqueado no ambiente, então os valores são fotos recentes e podem variar alguns milhares.</p>
+</header>
+
+<section>
+  <h2>O que importa</h2>
+  <ul class="points">
+    <li><b>As fábricas têm público, mas falam como catálogo.</b> Todeschini, Italínea, Ornare, Dell Anno, Florense e Bontempo somam entre 143 mil e 322 mil seguidores cada, com milhares de posts de ambiente pronto e showroom.</li>
+    <li><b>As marcenarias de alto padrão independentes são pequenas.</b> A maioria fica entre 5 mil e 35 mil seguidores. É o mesmo porte de disputa da Alfa Home.</li>
+    <li><b>Quem mais cresce é quem tem um rosto.</b> A Prieto Móveis chegou perto de meio milhão de seguidores com a dona explicando soluções para apartamentos pequenos, e virou referência entre famosos.</li>
+    <li><b>Seguidor não é engajamento.</b> O Baú da Marcenaria tem 1,3 milhão de seguidores e engajamento abaixo de 0,01%. O Juninho Carpinteiro tem 1,2 milhão e 4,43%, porque mostra o processo com precisão.</li>
+    <li><b>O vídeo que viraliza mostra um mecanismo.</b> Gaveta oculta, gaveta dentro de gaveta, cozinha escondida e porta que abre por sensor são os temas que mais se repetem nas páginas de descoberta do TikTok.</li>
+    <li><b>O melhor horário geral é entre 19h e 21h.</b> O estudo da Metricool aponta pico às 20h, com quarta e sexta como os melhores dias.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Seguidores no Instagram</h2>
+  <p class="note">Perfis com número confirmado. Passe o mouse ou toque numa barra para ver o que cada um posta.</p>
+  <div class="chart" id="chart">
+    <div class="bars" id="bars" role="list" aria-label="Seguidores no Instagram por perfil"></div>
+    <div class="axis" aria-hidden="true"><span></span><div class="ticks" id="ticks"></div></div>
+    <div class="tip" id="tip" hidden></div>
+  </div>
+</section>
+
+<section>
+  <h2>Tabela completa</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Perfil</th><th>Tipo</th><th>Onde</th><th class="n">Seguidores</th><th class="n">Posts</th><th class="n">Engajamento</th><th>O que posta</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  </div>
+  <p class="note">Engajamento é a média de curtidas mais comentários dividida pelos seguidores, nas 12 últimas publicações, medida pela HypeAuditor em julho. Traço quer dizer que o dado não estava público. Referência da HypeAuditor para comparar: de 5 mil a 50 mil seguidores, o normal fica entre 2,5% e 3,5%. De 50 mil a 500 mil, entre 2% e 2,5%. Acima de 500 mil, entre 1% e 2%.</p>
+</section>
+
+<section>
+  <h2>No TikTok</h2>
+  <div class="scroll">
+  <table style="min-width:560px">
+    <thead><tr><th>Perfil</th><th>Onde</th><th class="n">Seguidores</th><th>O que posta</th></tr></thead>
+    <tbody>
+      <tr><td>DM Dream Marcenaria</td><td>—</td><td class="n">139 mil</td><td>Dicas de cozinha planejada e armário embutido.</td></tr>
+      <tr><td>Marcenaria Fundo de Casa</td><td>—</td><td class="n">73,1 mil</td><td>Máquinas, bastidores de produção e projetos que viralizaram, como um seccionador de chapas.</td></tr>
+      <tr><td>SMC Móveis Planejados</td><td>São Luís (MA)</td><td class="n">14,4 mil</td><td>Projetos entregues na cidade.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Nenhuma das grandes fábricas apareceu com presença forte no TikTok. O espaço está aberto para marcenaria de alto padrão.</p>
+</section>
+
+<section>
+  <h2>O que viraliza no nicho</h2>
+  <div class="grid2">
+    <div class="card"><h3>Mecanismo revelado</h3><p>Um móvel que esconde ou transforma algo, mostrado em um único movimento.</p><p class="ex">Gaveta oculta na mesa de cabeceira, gaveta dentro de gaveta, gavetão de vassoura embaixo da pia, cozinha escondida no armário, porta com sensor.</p></div>
+    <div class="card"><h3>Dono ou dona como rosto</h3><p>A pessoa da marca explica a solução olhando para a câmera. Gera confiança e conversa no Direct.</p><p class="ex">Prieto Móveis, com a CEO Pri Prieto falando de apartamentos pequenos. Marcenaria Jurerê, em Sorocaba, que passou a tirar 70% dos projetos do Instagram ao trocar foto por vídeo.</p></div>
+    <div class="card"><h3>Precisão artesanal</h3><p>Processo em close, madeira maciça, encaixe perfeito. É o formato com o maior engajamento medido na pesquisa.</p><p class="ex">Juninho Carpinteiro, com 4,43% de engajamento trabalhando jatobá.</p></div>
+    <div class="card"><h3>Tendência do ano</h3><p>Listas de cores e acabamentos que o público quer salvar e mandar para o arquiteto.</p><p class="ex">Cores de MDF de 2026, cozinha em tons terrosos e madeira, canto alemão.</p></div>
+    <div class="card"><h3>Casa de famoso</h3><p>Usar uma casa conhecida como gancho para falar de acabamento e marcenaria.</p><p class="ex">A Prieto cresceu na onda das influenciadoras de reforma. A Alfa Home já usa esse gancho nos vídeos de referência.</p></div>
+    <div class="card"><h3>Antes e depois e bastidores</h3><p>Chegada das peças, montagem e ambiente pronto. Funciona melhor como série do que como post solto.</p><p class="ex">Formato recomendado em quase todos os guias do setor e usado pelas marcenarias pequenas da lista.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Horários de publicação</h2>
+  <div class="scroll">
+  <table style="min-width:560px">
+    <thead><tr><th>Fonte</th><th>Melhor faixa</th><th>Melhores dias</th></tr></thead>
+    <tbody>
+      <tr><td>Metricool, estudo do Instagram 2026, 24 milhões de posts</td><td>18h às 21h, pico às 20h</td><td>Quarta e sexta. Evitar terça e quinta.</td></tr>
+      <tr><td>Levantamento para Reels no Brasil</td><td>11h às 13h e 19h às 21h</td><td>Segunda a quinta. Sábado das 10h às 17h. Domingo das 12h às 15h.</td></tr>
+      <tr><td>Hootsuite</td><td>9h e 12h</td><td>Segunda a quinta</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Estes são horários médios de todo o Instagram, não dos concorrentes. Para saber em que hora cada rival posta e qual post dele bombou, é preciso adicionar os perfis como concorrentes no Metricool, que acompanha isso automaticamente. Outro dado do estudo: 70% das visualizações de um Reel chegam nos três primeiros dias, e 30% no primeiro. O estudo da HypeAuditor com a Metricool sobre 83 milhões de posts brasileiros mostrou que carrossel alcança tanto quanto Reels em muitas contas.</p>
+</section>
+
+<section>
+  <h2>O que a Alfa Home pode fazer com isso</h2>
+  <ol class="steps">
+    <li><b>Manter a apresentadora como rosto da marca.</b> É o que separa a Alfa Home das fábricas e é o formato que mais fez marcenaria crescer.</li>
+    <li><b>Fazer uma série de mecanismos.</b> Um Reel curto por detalhe: gaveta oculta, iluminação que acende, porta com toque, rodapé recuado. Cortes rápidos na revelação, como já está no guia de estilo.</li>
+    <li><b>Publicar às 20h, com prioridade para quarta e sexta.</b> Depois de um mês, comparar com os horários da própria audiência no Metricool.</li>
+    <li><b>Testar carrossel.</b> Um por semana com antes e depois ou lista de acabamentos, reaproveitando os renders.</li>
+    <li><b>Abrir perfil no TikTok com os mesmos Reels.</b> As fábricas quase não estão lá.</li>
+    <li><b>Mapear os rivais da cidade.</b> Assim que soubermos a cidade da Alfa Home, a busca local entra neste relatório.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Fontes</h2>
+  <ul class="sources">
+    <li><a href="https://www.instagram.com/todeschinioficial/">Todeschini no Instagram</a></li>
+    <li><a href="https://www.instagram.com/dellannooficial/">Dell Anno no Instagram</a></li>
+    <li><a href="https://www.instagram.com/ornare_official/">Ornare no Instagram</a></li>
+    <li><a href="https://www.instagram.com/florenseofficial/">Florense no Instagram</a></li>
+    <li><a href="https://www.instagram.com/italineamoveis/">Italínea no Instagram</a></li>
+    <li><a href="https://www.instagram.com/bontempo_oficial/">Bontempo no Instagram</a></li>
+    <li><a href="https://www.instagram.com/digitalmarcenaria7/">Digital Marcenaria no Instagram</a></li>
+    <li><a href="https://www.instagram.com/alttodesign/">Altto Design no Instagram</a></li>
+    <li><a href="https://www.instagram.com/marcenarialuigi_oficial/">Marcenaria Luigi no Instagram</a></li>
+    <li><a href="https://www.instagram.com/grupoprimeiralinha/">Primeira Linha no Instagram</a></li>
+    <li><a href="https://www.instagram.com/newmoveisoficial/">New Móveis no Instagram</a></li>
+    <li><a href="https://www.instagram.com/armandomoveisplanejados/">Armando Móveis no Instagram</a></li>
+    <li><a href="https://hypeauditor.com/pt/instagram/baudamarcenaria/">HypeAuditor: Baú da Marcenaria</a></li>
+    <li><a href="https://hypeauditor.com/pt/instagram/juninhocarpinteiro/">HypeAuditor: Juninho Carpinteiro</a></li>
+    <li><a href="https://hypeauditor.com/pt/instagram/ateliermateus/">HypeAuditor: Ateliê Mateus</a></li>
+    <li><a href="https://www.metropoles.com/celebridades/viral-entre-famosos-prieto-moveis-ganha-influencia-na-web">Metrópoles: Prieto Móveis</a></li>
+    <li><a href="https://exame.com/pme/como-ela-ja-faturou-r-300-mil-neste-ano-usando-o-instagram/">Exame: Marcenaria Jurerê</a></li>
+    <li><a href="https://metricool.com/pt/melhor-horario-para-postar-instagram/">Metricool: melhor horário 2026</a></li>
+    <li><a href="https://metricool.com/pt/instagram-brasil-2026/">Metricool: Instagram no Brasil 2026</a></li>
+    <li><a href="https://cut.pro/en/blog/best-time-to-post-reels-brazil">Horários de Reels no Brasil</a></li>
+    <li><a href="https://www.tiktok.com/discover/gaveta-oculta-m%C3%B3veis-planejados">TikTok: gaveta oculta em planejados</a></li>
+    <li><a href="https://blog.hypeauditor.com/pt/taxa-de-engajamento-do-instagram/">HypeAuditor: taxa de engajamento</a></li>
+  </ul>
+</section>
+</main>
+
+<script>
+const D=[
+ {n:"Baú da Marcenaria",h:"baudamarcenaria",t:"Criador de madeira",w:"—",f:1325769,p:null,e:"<0,01%",q:"Projetos de madeira e reforma. Muito seguidor, quase nenhuma interação."},
+ {n:"Juninho Carpinteiro",h:"juninhocarpinteiro",t:"Criador de madeira",w:"—",f:1168161,p:null,e:"4,43%",q:"Processo artesanal em jatobá, pergolados e acabamento de precisão."},
+ {n:"Digital Marcenaria",h:"digitalmarcenaria7",t:"Agregador",w:"Nacional",f:950000,p:5033,e:"—",q:"Vitrine que liga clientes a marcenarias de luxo. Posta muitos projetos de parceiros."},
+ {n:"Todeschini",h:"todeschinioficial",t:"Fábrica",w:"Bento Gonçalves (RS)",f:322000,p:null,e:"—",q:"Ambientes prontos de catálogo e lojas da rede."},
+ {n:"Italínea",h:"italineamoveis",t:"Fábrica",w:"Rede nacional",f:304000,p:1172,e:"—",q:"Maior rede de planejados da América Latina. Ambientes e ofertas."},
+ {n:"Ornare",h:"ornare_official",t:"Fábrica",w:"São Paulo (SP)",f:266000,p:5638,e:"—",q:"Luxo sob medida, design internacional, lojas no exterior."},
+ {n:"Dell Anno",h:"dellannooficial",t:"Fábrica",w:"Bento Gonçalves (RS)",f:210000,p:null,e:"—",q:"Cozinhas e ambientes de marca, rede de lojas."},
+ {n:"Florense",h:"florenseofficial",t:"Fábrica",w:"Bento Gonçalves (RS)",f:197000,p:2624,e:"—",q:"Ambientes de alto padrão com fotografia de arquitetura."},
+ {n:"Bontempo",h:"bontempo_oficial",t:"Fábrica",w:"Rede nacional",f:143000,p:3942,e:"—",q:"Projetos de ambientes e ideias de decoração."},
+ {n:"New Móveis Planejados",h:"newmoveisoficial",t:"Marcenaria",w:"—",f:129000,p:null,e:"—",q:"Projetos de planejados entregues."},
+ {n:"Armando Móveis",h:"armandomoveisplanejados",t:"Marcenaria",w:"Belo Horizonte (MG)",f:112000,p:null,e:"—",q:"Planejados em BH."},
+ {n:"Ateliê Mateus",h:"ateliermateus",t:"Criador de madeira",w:"—",f:54800,p:null,e:"3,54%",q:"Peças autorais em madeira."},
+ {n:"Mobile Planejados",h:"mobile.planejados",t:"Marcenaria",w:"—",f:35000,p:null,e:"—",q:"Planejados contemporâneos de alto padrão."},
+ {n:"Projeto Móveis Planejados",h:"projeto_moveis_planejados",t:"Marcenaria",w:"—",f:30000,p:null,e:"—",q:"Casas mobiliadas sob medida."},
+ {n:"MD3 Marcenaria",h:"md3marcenaria",t:"Marcenaria",w:"São Paulo (SP)",f:25000,p:null,e:"—",q:"Marcenaria de alto padrão."},
+ {n:"Altto Design",h:"alttodesign",t:"Marcenaria",w:"São Paulo (SP)",f:22000,p:860,e:"—",q:"Marcenaria de luxo, showrooms no Anália Franco e no Tucuruvi."},
+ {n:"Florense PE",h:"florense.pe",t:"Loja de fábrica",w:"Pernambuco",f:22000,p:1037,e:"—",q:"Loja regional da Florense."},
+ {n:"Ornare Goiás",h:"ornaregoias",t:"Loja de fábrica",w:"Goiás",f:20000,p:null,e:"—",q:"Loja regional da Ornare."},
+ {n:"Marcenaria Luigi",h:"marcenarialuigi_oficial",t:"Marcenaria",w:"—",f:17000,p:620,e:"—",q:"Planejados residenciais e comerciais de alto padrão."},
+ {n:"Primeira Linha",h:"grupoprimeiralinha",t:"Marcenaria",w:"—",f:16000,p:null,e:"—",q:"Marcenaria de alto padrão."},
+ {n:"Florense Alphaville",h:"florensealphaville",t:"Loja de fábrica",w:"Barueri (SP)",f:13000,p:2482,e:"—",q:"Loja regional da Florense."},
+ {n:"Tendenza Planejados",h:"tendenzaplanejados",t:"Marcenaria",w:"—",f:8800,p:null,e:"—",q:"Planejados de alto padrão sob medida."},
+ {n:"Mary Planejados",h:"maryplanejados",t:"Marcenaria",w:"Brasília (DF)",f:7492,p:null,e:"—",q:"Ambientes planejados."},
+ {n:"Rhema Planejados",h:"rhemaplanejados",t:"Marcenaria",w:"—",f:5308,p:null,e:"—",q:"Marcenaria de alto padrão."}
+];
+const fmt=v=>v>=1e6?(v/1e6).toLocaleString("pt-BR",{maximumFractionDigits:2})+" mi":v>=1e4?Math.round(v/1e3).toLocaleString("pt-BR")+" mil":v.toLocaleString("pt-BR");
+const MAX=1400000;
+const bars=document.getElementById("bars"),tip=document.getElementById("tip"),chart=document.getElementById("chart");
+D.forEach(d=>{
+  const l=document.createElement("div");l.className="lbl";l.innerHTML=d.n+"<small>"+d.t+"</small>";
+  const tr=document.createElement("div");tr.className="track";tr.tabIndex=0;tr.setAttribute("role","listitem");
+  tr.setAttribute("aria-label",d.n+", "+fmt(d.f)+" seguidores");
+  const b=document.createElement("div");b.className="bar";b.style.width="calc((100% - 70px) * "+(d.f/MAX)+")";
+  const v=document.createElement("span");v.className="val";v.textContent=fmt(d.f);
+  tr.append(b,v);bars.append(l,tr);
+  const show=()=>{tip.innerHTML="<b>@"+d.h+"</b><br>"+d.q+(d.e!=="—"?"<br>Engajamento: "+d.e:"");tip.hidden=false;
+    const r=tr.getBoundingClientRect(),c=chart.getBoundingClientRect(),br=b.getBoundingClientRect();
+    let x=br.right-c.left+8, y=r.top-c.top-4; if(x+240>c.width) x=Math.max(8,c.width-248);
+    tip.style.left=x+"px";tip.style.top=(y+r.height+4)+"px";};
+  tr.addEventListener("mouseenter",show);tr.addEventListener("focus",show);
+  tr.addEventListener("mouseleave",()=>tip.hidden=true);tr.addEventListener("blur",()=>tip.hidden=true);
+});
+const ticks=document.getElementById("ticks");
+[0,400000,800000,1200000].forEach(t=>{const s=document.createElement("span");s.textContent=t?fmt(t):"0";s.style.left="calc((100% - 70px) * "+(t/MAX)+")";ticks.append(s)});
+const rows=document.getElementById("rows");
+[...D,{n:"Prieto Móveis",h:"prietomoveis",t:"Marcenaria",w:"—",f:null,p:null,e:"—",q:"CEO como rosto da marca, soluções para apartamento pequeno. Perto de meio milhão segundo o Metrópoles."}].forEach(d=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML="<td>"+d.n+"<br><span class='h'>@"+d.h+"</span></td><td><span class='chip'>"+d.t+"</span></td><td>"+d.w+"</td><td class='n'>"+(d.f?fmt(d.f):"≈ 500 mil")+"</td><td class='n'>"+(d.p?d.p.toLocaleString("pt-BR"):"—")+"</td><td class='n'>"+d.e+"</td><td>"+d.q+"</td>";
+  rows.append(tr);
+});
+</script>
