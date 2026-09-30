@@ -1,0 +1,15 @@
+{
+  "nome": "rodape_inox",
+  "fala": "fala.mp4",
+  "musica": "musica.mp3",
+  "remover": [[12.4, 14.1]],
+  "titulos": [
+    {"frase": "você provavelmente nunca repararia", "destaque": "repararia"},
+    {"frase": "por muitos anos", "destaque": "anos"}
+  ],
+  "insercoes": [
+    {"arquivo": "broll/rodape.mp4", "na_palavra": "rodapé", "duracao": 3.0, "modo": "dividida"},
+    {"arquivo": "broll/limpeza.mp4", "na_palavra": "limpeza", "duracao": 3.5, "modo": "cheia"},
+    {"arquivo": "renders/painel.jpg", "inicio": 18.0, "fim": 21.0, "modo": "dividida"}
+  ]
+}

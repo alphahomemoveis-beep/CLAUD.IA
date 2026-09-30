@@ -1,0 +1,27 @@
+{
+  "nome": "exemplo_so_imagens",
+  "musica": "cenas.mp4",
+  "musica_inicio": 8.3,
+  "sequencia": [
+    {"arquivo": "cenas.mp4", "inicio": 8.3,  "fim": 10.9},
+    {"arquivo": "cenas.mp4", "inicio": 11.1, "fim": 15.6},
+    {"arquivo": "cenas.mp4", "inicio": 17.7, "fim": 19.6},
+    {"arquivo": "cenas.mp4", "inicio": 19.8, "fim": 21.8},
+    {"arquivo": "cenas.mp4", "inicio": 22.0, "fim": 24.0},
+    {"arquivo": "cenas.mp4", "inicio": 24.2, "fim": 28.3},
+    {"arquivo": "cenas.mp4", "inicio": 28.6, "fim": 31.4, "movimento": "sair"},
+    {"arquivo": "cenas.mp4", "inicio": 32.5, "fim": 36.9}
+  ],
+  "textos": [
+    {"texto": "3 detalhes que facilitam o dia a dia", "destaque": "3 detalhes", "inicio": 0.1, "fim": 2.5},
+    {"texto": "1º tomada embutida", "destaque": "1º tomada", "inicio": 2.7, "fim": 4.4},
+    {"texto": "nenhum fio aparente", "inicio": 4.5, "fim": 7.0},
+    {"texto": "mesa sempre livre", "inicio": 7.2, "fim": 9.0},
+    {"texto": "2º nichos com LED", "destaque": "LED", "inicio": 9.1, "fim": 11.0},
+    {"texto": "a luz valoriza cada objeto", "inicio": 11.1, "fim": 13.0},
+    {"texto": "3º gavetas organizadoras", "destaque": "3º gavetas", "inicio": 13.2, "fim": 15.0},
+    {"texto": "tudo no lugar certo", "inicio": 15.1, "fim": 17.1},
+    {"texto": "planejado para a sua rotina", "inicio": 17.4, "fim": 20.0},
+    {"texto": "vem orçar com quem entende", "destaque": "entende", "inicio": 20.5, "fim": 23.8}
+  ]
+}

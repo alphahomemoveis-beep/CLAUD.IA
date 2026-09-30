@@ -1,0 +1,17 @@
+# vídeos renderizados
+saida/
+# modelos baixados pelo setup
+editor/modelos/
+# material bruto dos projetos (fica fora do git)
+projetos/**/*.mp4
+projetos/**/*.mov
+projetos/**/*.MOV
+projetos/**/*.m4a
+projetos/**/*.mp3
+projetos/**/*.wav
+projetos/**/*.jpg
+projetos/**/*.jpeg
+projetos/**/*.png
+projetos/**/*.webp
+projetos/**/*.transcricao.json
+__pycache__/
