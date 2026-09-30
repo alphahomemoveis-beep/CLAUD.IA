@@ -1,6 +1,6 @@
 {
-  "nome": "chegada_apartamento",
-  "_obs": "Música: SATX - Fundo de Vídeo, a partir de 55,44 s, o mesmo trecho do vídeo da garagem. Cortes alinhados à batida.",
+  "nome": "chegada_apartamento_v2",
+  "_obs": "Montagem na ordem da locução nova (locucao.md). Música SATX a partir de 55,44 s, cortes na batida.",
   "musica": "musica.mp3",
   "musica_inicio": 55.44,
   "sequencia": [
@@ -11,22 +11,22 @@
       "movimento": "entrar"
     },
     {
+      "arquivo": "brutos/lv_0_20260930105317.mp4",
+      "inicio": 0.2,
+      "fim": 3.7,
+      "movimento": "nenhum"
+    },
+    {
       "arquivo": "brutos/lv_0_20260930094005.mp4",
       "inicio": 1.5,
-      "fim": 4.125,
+      "fim": 3.25,
       "movimento": "nenhum"
     },
     {
       "arquivo": "brutos/lv_0_20260930140150.mp4",
       "inicio": 16.6,
-      "fim": 19.225,
+      "fim": 18.35,
       "movimento": "entrar"
-    },
-    {
-      "arquivo": "brutos/lv_0_20260930105317.mp4",
-      "inicio": 0.2,
-      "fim": 3.7,
-      "movimento": "nenhum"
     },
     {
       "arquivo": "brutos/lv_0_20260930135805.mp4",
@@ -37,20 +37,26 @@
     {
       "arquivo": "brutos/folhas_desfocadas-2.mp4",
       "inicio": 2.8,
-      "fim": 6.3,
+      "fim": 5.425,
       "movimento": "entrar"
-    },
-    {
-      "arquivo": "brutos/folhas_desfocadas-2.mp4",
-      "inicio": 10.6,
-      "fim": 12.35,
-      "movimento": "sair"
     },
     {
       "arquivo": "brutos/lv_0_20260930135805.mp4",
       "inicio": 7.35,
       "fim": 9.975,
       "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/folhas_desfocadas-2.mp4",
+      "inicio": 19.5,
+      "fim": 22.125,
+      "movimento": "sair"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930105317.mp4",
+      "inicio": 2.8,
+      "fim": 4.55,
+      "movimento": "nenhum"
     },
     {
       "arquivo": "brutos/lv_0_20260930105317.mp4",
@@ -61,85 +67,63 @@
     {
       "arquivo": "brutos/lv_0_20260930135704.mp4",
       "inicio": 0.2,
-      "fim": 3.7,
+      "fim": 2.825,
       "movimento": "nenhum"
     },
     {
       "arquivo": "brutos/lv_0_20260930135704.mp4",
       "inicio": 4.0,
-      "fim": 7.5,
+      "fim": 5.75,
       "movimento": "sair"
     }
   ],
   "textos": [
     {
-      "texto": "como chega um móvel de alto padrão",
-      "destaque": "alto padrão",
-      "inicio": 0.09,
-      "fim": 2.37
+      "texto": "o que acontece antes da instalação",
+      "destaque": "antes",
+      "inicio": 0.1,
+      "fim": 5.85
     },
     {
-      "texto": "a caminho da obra",
-      "inicio": 2.58,
-      "fim": 4.98
+      "texto": "cada peça identificada com destino certo",
+      "destaque": "identificada",
+      "inicio": 6.05,
+      "fim": 9.35
     },
     {
-      "texto": "subindo peça por peça",
-      "inicio": 5.2,
-      "fim": 7.61
+      "texto": "cada detalhe conferido",
+      "destaque": "conferido",
+      "inicio": 9.6,
+      "fim": 12.9
     },
     {
-      "texto": "espaço pronto para receber",
-      "destaque": "pronto",
-      "inicio": 7.88,
-      "fim": 11.05
-    },
-    {
-      "texto": "organização por ambiente",
-      "destaque": "ambiente",
-      "inicio": 11.32,
-      "fim": 12.86
-    },
-    {
-      "texto": "cada ambiente tem sua ficha",
-      "destaque": "ficha",
-      "inicio": 13.08,
+      "texto": "exatamente como foi planejado",
+      "destaque": "planejado",
+      "inicio": 13.1,
       "fim": 16.35
     },
     {
-      "texto": "tomada por dentro do móvel",
-      "destaque": "tomada",
-      "inicio": 16.53,
-      "fim": 18.14
+      "texto": "alto padrão nos detalhes que você não vê",
+      "destaque": "alto padrão",
+      "inicio": 16.6,
+      "fim": 20.7
     },
     {
-      "texto": "tudo conferido antes da montagem",
-      "destaque": "conferido",
-      "inicio": 18.34,
-      "fim": 20.74
-    },
-    {
-      "texto": "não é o ambiente que se adapta aos móveis",
-      "destaque": "ambiente",
-      "inicio": 20.95,
-      "fim": 25.12
-    },
-    {
-      "texto": "são os móveis que se adaptam a você",
+      "texto": "os móveis se adaptam a você",
       "destaque": "você",
-      "inicio": 25.31,
-      "fim": 28.62
+      "inicio": 21.0,
+      "fim": 25.1
     },
     {
-      "texto": "chama a Alfa Home no Direct",
-      "inicio": 28.82,
-      "fim": 30.42
+      "texto": "chama a AlphaHome no Direct",
+      "inicio": 25.35,
+      "fim": 27.3
     },
     {
-      "texto": "vem orçar com quem entende",
-      "destaque": "entende",
-      "inicio": 30.52,
-      "fim": 32.12
+      "texto": "faça seu orçamento",
+      "destaque": "orçamento",
+      "inicio": 27.45,
+      "fim": 29.5
     }
   ]
 }
