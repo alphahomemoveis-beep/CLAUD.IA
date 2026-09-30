@@ -56,6 +56,7 @@ O vídeo sai em `saida/<nome>.mp4`.
 | `insercoes` | Imagens de apoio. `{arquivo, na_palavra ou inicio, duracao ou fim, modo, inicio_arquivo, movimento}`. `modo` é `dividida` ou `cheia`. |
 | `textos` | Textos manuais `{texto, inicio, fim, destaque}`. Com `destaque`, vira título grande. |
 | `encerramento` | `false` para tirar o cartão final. |
+| `assinatura` | `false` para tirar o @alphahome.moveis do canto superior direito. |
 | `fontes` | Fonte de cada papel: `legenda`, `titulo`, `apoio` e `marca`. Aceita o caminho do arquivo ou `{arquivo, peso}`. O peso só vale para fontes variáveis. |
 
 ## Fontes da marca

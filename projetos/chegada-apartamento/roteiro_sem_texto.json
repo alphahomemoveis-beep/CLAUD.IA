@@ -1,6 +1,6 @@
 {
   "nome": "chegada_apartamento_sem_texto",
-  "_obs": "Mesma edição do roteiro.json, sem títulos nem legendas, só com a música. Base para gravar a locução.",
+  "_obs": "Mesma edição do roteiro.json, sem títulos, legendas nem assinatura no canto, só com a música. Base para gravar a locução.",
   "musica": "musica.mp3",
   "musica_inicio": 55.44,
   "sequencia": [
@@ -71,5 +71,6 @@
       "movimento": "sair"
     }
   ],
-  "textos": []
+  "textos": [],
+  "assinatura": false
 }

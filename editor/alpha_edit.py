@@ -800,6 +800,7 @@ def render(caminho_roteiro, previa=False):
                         "mov": ins.get("movimento", "entrar")})
 
     fim_card = cfg.get("encerramento", True)
+    assinatura = cfg.get("assinatura", True)
     dur_card = 1.6 if fim_card else 0.0
     dur_video = dur_total + dur_card
     n_quadros = int(round(dur_video * FPS))
@@ -882,8 +883,9 @@ def render(caminho_roteiro, previa=False):
                 if f < 1:
                     frame = (frame.astype(np.float32) * f + base.astype(np.float32) * (1 - f)).astype(np.uint8)
             textos.desenha(frame, t, cy)
-            m = marca_cor if t < 1.5 else marca_bra
-            colar_em(frame, m, int(W - m.shape[1] - 48 * est.k), int(est.marca_y * H - m.shape[0] / 2), 0.9)
+            if assinatura:
+                m = marca_cor if t < 1.5 else marca_bra
+                colar_em(frame, m, int(W - m.shape[1] - 48 * est.k), int(est.marca_y * H - m.shape[0] / 2), 0.9)
             ultimo = frame
             ultimo_cy = cy
         else:
