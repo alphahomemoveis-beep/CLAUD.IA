@@ -1,0 +1,75 @@
+{
+  "nome": "chegada_apartamento_sem_texto",
+  "_obs": "Mesma edição do roteiro.json, sem títulos nem legendas, só com a música. Base para gravar a locução.",
+  "musica": "musica.mp3",
+  "musica_inicio": 55.44,
+  "sequencia": [
+    {
+      "arquivo": "brutos/lv_0_20260930135805.mp4",
+      "inicio": 3.3,
+      "fim": 5.765,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930094005.mp4",
+      "inicio": 1.5,
+      "fim": 4.125,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930140150.mp4",
+      "inicio": 16.6,
+      "fim": 19.225,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930105317.mp4",
+      "inicio": 0.2,
+      "fim": 3.7,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135805.mp4",
+      "inicio": 0.15,
+      "fim": 1.9,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/folhas_desfocadas-2.mp4",
+      "inicio": 2.8,
+      "fim": 6.3,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/folhas_desfocadas-2.mp4",
+      "inicio": 10.6,
+      "fim": 12.35,
+      "movimento": "sair"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135805.mp4",
+      "inicio": 7.35,
+      "fim": 9.975,
+      "movimento": "entrar"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930105317.mp4",
+      "inicio": 5.0,
+      "fim": 9.375,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135704.mp4",
+      "inicio": 0.2,
+      "fim": 3.7,
+      "movimento": "nenhum"
+    },
+    {
+      "arquivo": "brutos/lv_0_20260930135704.mp4",
+      "inicio": 4.0,
+      "fim": 7.5,
+      "movimento": "sair"
+    }
+  ],
+  "textos": []
+}
