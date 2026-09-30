@@ -56,6 +56,22 @@ O vídeo sai em `saida/<nome>.mp4`.
 | `insercoes` | Imagens de apoio. `{arquivo, na_palavra ou inicio, duracao ou fim, modo, inicio_arquivo, movimento}`. `modo` é `dividida` ou `cheia`. |
 | `textos` | Textos manuais `{texto, inicio, fim, destaque}`. Com `destaque`, vira título grande. |
 | `encerramento` | `false` para tirar o cartão final. |
+| `fontes` | Fonte de cada papel: `legenda`, `titulo`, `apoio` e `marca`. Aceita o caminho do arquivo ou `{arquivo, peso}`. O peso só vale para fontes variáveis. |
+
+## Fontes da marca
+
+Para usar as mesmas fontes em todos os vídeos, coloque os arquivos `.ttf` ou `.otf` em `editor/assets/fonts/marca/` e crie ali um `fontes.json`:
+
+```json
+{
+  "legenda": "MinhaFonte-SemiBold.ttf",
+  "titulo": "MinhaFonte-Black.ttf",
+  "apoio": "MinhaFonte-LightItalic.ttf",
+  "marca": "MinhaFonte-Medium.ttf"
+}
+```
+
+O campo `fontes` de um roteiro tem prioridade sobre esse arquivo.
 
 Os tempos de `insercoes` e `textos` são do vídeo já editado. `na_palavra` encontra o momento sozinho, o que evita recalcular quando as pausas mudam.
 

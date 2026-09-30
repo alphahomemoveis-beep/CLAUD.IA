@@ -73,12 +73,55 @@ class Estilo:
 
 _fontes = {}
 
+# Fonte de cada papel no vídeo: arquivo e peso (o peso só vale para fontes variáveis).
+# Pode ser trocada pelo campo "fontes" do roteiro ou por editor/assets/fonts/marca/fontes.json.
+FONTES = {
+    "legenda": {"arquivo": FONTE, "peso": None},
+    "titulo": {"arquivo": FONTE, "peso": None},
+    "apoio": {"arquivo": FONTE_IT, "peso": None},
+    "marca": {"arquivo": FONTE, "peso": 560},
+}
+PESOS_PADRAO = {"legenda": 620, "titulo": 800, "apoio": 430, "marca": 560}
 
-def fonte(tam, peso, italico=False):
-    chave = (tam, peso, italico)
+
+def configura_fontes(cfg_fontes, pasta):
+    """Aplica fontes da marca (arquivo global) e depois as do roteiro."""
+    marca = os.path.join(AQUI, "assets", "fonts", "marca", "fontes.json")
+    for origem, base in ((marca, os.path.dirname(marca)), (None, pasta)):
+        dados = cfg_fontes if origem is None else (json.load(open(origem)) if os.path.exists(origem) else {})
+        for papel, v in (dados or {}).items():
+            if papel not in FONTES:
+                print(f"  aviso: papel de fonte desconhecido {papel!r}", file=sys.stderr)
+                continue
+            if isinstance(v, str):
+                v = {"arquivo": v}
+            arq = v["arquivo"] if os.path.isabs(v["arquivo"]) else os.path.join(base, v["arquivo"])
+            if not os.path.exists(arq):
+                raise SystemExit(f"fonte não encontrada: {arq}")
+            FONTES[papel] = {"arquivo": arq, "peso": v.get("peso")}
+    _fontes.clear()
+
+
+def fonte(tam, peso=None, italico=False, papel=None):
+    if papel is None:
+        papel = "apoio" if italico else "legenda"
+    info = FONTES[papel]
+    peso = info.get("peso") or peso or PESOS_PADRAO[papel]
+    chave = (papel, tam, peso)
     if chave not in _fontes:
-        f = ImageFont.truetype(FONTE_IT if italico else FONTE, tam)
-        f.set_variation_by_axes([peso])
+        f = ImageFont.truetype(info["arquivo"], tam)
+        try:
+            eixos = f.get_variation_axes()
+            valores = []
+            for e in eixos:
+                nome = e["name"].decode() if isinstance(e["name"], bytes) else str(e["name"])
+                if nome.lower().startswith(("weight", "wght")):
+                    valores.append(min(max(peso, e["minimum"]), e["maximum"]))
+                else:
+                    valores.append(e["default"])
+            f.set_variation_by_axes(valores)
+        except Exception:
+            pass  # fonte estática: o peso vem do próprio arquivo
         _fontes[chave] = f
     return _fontes[chave]
 
@@ -142,7 +185,7 @@ def icone_instagram(tam, colorido):
 
 def marca_dagua(est, colorido):
     ic = icone_instagram(round(34 * est.k), colorido)
-    tx = desenha_texto(est.handle, fonte(round(17 * est.k), 560), 0.2, sombra=0.3)
+    tx = desenha_texto(est.handle, fonte(round(17 * est.k), 560, papel="marca"), 0.2, sombra=0.3)
     larg = max(ic.width, tx.width)
     img = Image.new("RGBA", (larg, ic.height + tx.height), (0, 0, 0, 0))
     img.alpha_composite(ic, (larg - ic.width - round(10 * est.k), 0))
@@ -152,7 +195,7 @@ def marca_dagua(est, colorido):
 
 def cartao_final(est):
     ic = icone_instagram(round(118 * est.k), True)
-    tx = desenha_texto(est.handle, fonte(round(30 * est.k), 560), 0.4, sombra=0.4)
+    tx = desenha_texto(est.handle, fonte(round(30 * est.k), 560, papel="marca"), 0.4, sombra=0.4)
     larg = max(ic.width, tx.width)
     img = Image.new("RGBA", (larg, ic.height + tx.height + round(8 * est.k)), (0, 0, 0, 0))
     img.alpha_composite(ic, ((larg - ic.width) // 2, 0))
@@ -162,13 +205,13 @@ def cartao_final(est):
 
 def bloco_titulo(est, antes, destaque, depois):
     """Título grande: apoio fino em cima, palavra gigante, apoio embaixo."""
-    ft = fonte(est.titulo_tam, est.titulo_peso)
+    ft = fonte(est.titulo_tam, est.titulo_peso, papel="titulo")
     tam = est.titulo_tam
     while largura_texto(destaque, ft, est.titulo_track * tam / est.titulo_tam) > est.titulo_max_larg and tam > 60:
         tam = int(tam * 0.93)
-        ft = fonte(tam, est.titulo_peso)
+        ft = fonte(tam, est.titulo_peso, papel="titulo")
     grande = desenha_texto(destaque, ft, est.titulo_track * tam / est.titulo_tam, sombra=0.42)
-    fa = fonte(est.apoio_tam, est.apoio_peso, italico=True)
+    fa = fonte(est.apoio_tam, est.apoio_peso, papel="apoio")
     partes = []
     if antes:
         partes.append(("a", desenha_texto(antes, fa, est.apoio_track, sombra=0.6)))
@@ -587,7 +630,7 @@ class Textos:
             if e["tipo"] == "titulo":
                 im = bloco_titulo(self.est, e.get("antes", ""), e["destaque"], e.get("depois", ""))
             else:
-                f = fonte(self.est.legenda_tam, self.est.legenda_peso)
+                f = fonte(self.est.legenda_tam, self.est.legenda_peso, papel="legenda")
                 im = desenha_texto(e["texto"], f, self.est.legenda_track, sombra=0.62)
             self.cache[i] = im
         return self.cache[i]
@@ -637,6 +680,7 @@ def render(caminho_roteiro, previa=False):
     cfg = json.load(open(caminho_roteiro))
     pasta = os.path.dirname(os.path.abspath(caminho_roteiro))
     nome = cfg.get("nome") or os.path.basename(pasta)
+    configura_fontes(cfg.get("fontes"), pasta)
     larg = 540 if previa else 1080
     est = Estilo(larg)
     W, H = est.W, est.H
