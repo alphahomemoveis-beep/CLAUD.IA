@@ -6,6 +6,7 @@ import { createSession } from "@/lib/auth/session";
 import { assertSameOrigin, clientIp, enforceRate } from "@/lib/api";
 import { badRequest, conflict, errorResponse } from "@/lib/errors";
 import { logActivity } from "@/lib/activity";
+import { ensureBrand } from "@/lib/brand-defaults";
 
 /** Diz se o app ainda não tem nenhum usuário (primeiro acesso). */
 export async function GET() {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
       await db.query(`SELECT pg_advisory_xact_lock(424242)`);
       const count = (await db.query<{ n: number }>(`SELECT COUNT(*)::int AS n FROM users`)).rows[0].n;
       if (count > 0) throw conflict("O primeiro acesso já foi feito. Entre com seu e-mail e senha.");
+      await ensureBrand(db as never);
       return (await db.query<{ id: string }>(
         `INSERT INTO users (email, name, password_hash, role) VALUES ($1,$2,$3,'owner') RETURNING id`,
         [b.email.toLowerCase(), b.name, hash],

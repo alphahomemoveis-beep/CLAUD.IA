@@ -110,15 +110,15 @@ cd studio
 npm install
 cp .env.example .env.local          # preencha DATABASE_URL, ANTHROPIC_API_KEY e APP_SECRET
 docker compose up -d                # opcional: banco local com pgvector
-npm run db:migrate
-npm run db:seed                     # marca e Prompt Mestre iniciais
+npm run db:migrate                  # em produção roda sozinho com npm run start:prod
 npm run dev                         # http://localhost:3000 > crie a conta do dono no primeiro acesso
 ```
 
 Para testar sem a OpenAI, use `AI_PROVIDER=mock`. As imagens viram marcadores de teste e a pesquisa avisa que é simulada.
 
 Se o banco não for o do docker-compose, crie as extensões como superusuário antes da migração (`db/init-extensions.sql`).
-No Supabase, ative `vector` e `pgcrypto` em Database > Extensions.
+No Supabase, ative `vector` em Database > Extensions e informe o certificado em `DATABASE_CA_CERT`.
+A marca e o Prompt Mestre iniciais são criados sozinhos no primeiro acesso.
 
 ### Verificações
 
@@ -129,6 +129,9 @@ npm run build
 ```
 
 ## Produção
+
+O passo a passo para publicar está em [DEPLOY.md](DEPLOY.md).
+
 
 - As chaves (Anthropic, Metricool, Windsor, OpenAI) ficam só em variáveis de ambiente do servidor. Nada com
   credencial vai para o navegador.

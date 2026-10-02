@@ -1,5 +1,6 @@
 import "server-only";
-import { query, queryOne } from "../db";
+import { query, queryOne, tx } from "../db";
+import { ensureBrand } from "../brand-defaults";
 import { defaultEmbeddingModel, defaultTextModel, env } from "../env";
 
 export interface BrandIdentity {
@@ -74,8 +75,10 @@ export type EffectiveAI = ReturnType<typeof effectiveAI>;
 
 export async function getBrand(): Promise<Brand> {
   const brand = await queryOne<Brand>(`SELECT * FROM brand_settings ORDER BY created_at LIMIT 1`);
-  if (!brand) throw new Error("Nenhuma marca configurada. Rode npm run db:seed.");
-  return brand;
+  if (brand) return brand;
+  // Primeiro uso: cria a marca AlphaHome e o Prompt Mestre inicial.
+  await tx((db) => ensureBrand(db as never));
+  return (await queryOne<Brand>(`SELECT * FROM brand_settings ORDER BY created_at LIMIT 1`))!;
 }
 
 export async function updateBrand(id: string, patch: Partial<Pick<Brand, "name" | "positioning" | "identity" | "ai_settings" | "logo_file_key" | "integrations">>) {

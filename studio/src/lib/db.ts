@@ -1,6 +1,7 @@
 import "server-only";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { env } from "./env";
+import { pgConfig } from "./pg-config";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -9,7 +10,7 @@ declare global {
 
 function pool(): Pool {
   if (!globalThis.__alphaPool) {
-    globalThis.__alphaPool = new Pool({ connectionString: env().DATABASE_URL, max: 10 });
+    globalThis.__alphaPool = new Pool({ ...pgConfig(env().DATABASE_URL, process.env.DATABASE_CA_CERT), max: 10 });
   }
   return globalThis.__alphaPool;
 }
