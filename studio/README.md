@@ -10,6 +10,13 @@ O cérebro do estúdio é o **Claude** (Anthropic). Além do estúdio criativo, 
 - **📅 Agenda de posts por conversa:** "coloca o vídeo do resultado da Casa 12 para sexta às 19h". O Claude acha a
   mídia nas pastas, escreve legenda e hashtags e cria um rascunho. Um dono ou gerente confirma, e o post vai para o
   Metricool, que publica na hora marcada.
+- **🎙️ Falar com a agenda:** botão de microfone na aba de agendar posts. O que você fala vira o pedido e é enviado
+  ao terminar. Opcionalmente, a resposta é lida em voz alta. Usa o reconhecimento de voz do navegador, em
+  português: funciona no Chrome, Edge e Safari, em HTTPS. Não funciona no Firefox.
+- **📈 Instagram ao vivo:** widget com seguidores, alcance, visualizações, ranking e próximo post. Aparece na tela
+  inicial e na agenda e tem página própria em `/widget`, que pode ser fixada no celular pela opção "Adicionar à
+  tela inicial". Atualiza a cada 3 horas: o navegador pede de novo a cada 3 horas, e o servidor só consulta
+  Windsor.ai e Metricool quando os dados passaram de 3 horas.
 - **📰 Jornal:** seguidores, alcance, visualizações, visitas e interações com setas de alta e queda contra o período
   anterior, ranking de seguidores com concorrentes e um editorial escrito pelo Claude só com os números calculados.
 - **Login:** primeiro acesso em `/primeiro-acesso`, papéis Dono, Gerente e Leitura, troca de senha.
@@ -89,8 +96,10 @@ Todas as tabelas de conteúdo apontam para `brand_settings`, o que prepara o app
   marca. O Instagram precisa estar conectado na conta do Windsor.ai.
 - **Concorrentes:** os concorrentes cadastrados no Metricool entram no ranking. Perfis podem ser adicionados e
   ter números lançados à mão no próprio jornal.
-- **Sincronização:** botão "Sincronizar agora" no jornal, ou um agendador chamando `/api/cron/sync` com
-  `Authorization: Bearer CRON_SECRET` (também marca como publicados os posts que o Metricool já publicou).
+- **Sincronização:** botão "Sincronizar agora" no jornal, o widget (a cada 3 horas) ou um agendador chamando
+  `/api/cron/sync` com `Authorization: Bearer CRON_SECRET`. O `vercel.json` já agenda essa chamada a cada 3 horas
+  na Vercel, que envia o `CRON_SECRET` sozinha. A sincronização também marca como publicados os posts que o
+  Metricool já publicou.
 
 ## Como rodar
 

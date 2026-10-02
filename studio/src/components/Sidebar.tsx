@@ -12,6 +12,7 @@ const NAV = [
   { href: "/pastas", label: "Pastas de obras", icon: "🗂️" },
   { href: "/agenda", label: "Agenda de posts", icon: "📅" },
   { href: "/jornal", label: "Jornal", icon: "📰" },
+  { href: "/widget", label: "Instagram ao vivo", icon: "📈" },
   { href: "/biblioteca", label: "Biblioteca visual", icon: "🖼️" },
   { href: "/memoria", label: "Memória da marca", icon: "🧠" },
   { href: "/identidade", label: "Identidade", icon: "🎨" },

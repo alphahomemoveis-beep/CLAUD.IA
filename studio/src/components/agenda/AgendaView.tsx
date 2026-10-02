@@ -5,6 +5,8 @@ import { api } from "@/lib/client";
 import { Toast } from "../Modal";
 import { MediaPicker } from "./MediaPicker";
 import { PostCard, type Post } from "./PostCard";
+import { speak, stopSpeaking, useVoice } from "./useVoice";
+import { InstagramWidget } from "../InstagramWidget";
 
 interface Msg { id: string; role: "user" | "assistant"; kind: string; content: string; payload: { postIds?: string[]; attached?: string[] } | null }
 interface Conv { id: string; title: string; updated_at: string }
@@ -40,6 +42,27 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
   const [tab, setTab] = useState<"conversa" | "calendario">("conversa");
   const [toast, setToast] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
+  const [autoSend, setAutoSend] = useState(true);
+  const [speakReplies, setSpeakReplies] = useState(false);
+
+  // Preferências de voz guardadas só neste navegador.
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("agenda-voz") ?? "{}");
+      if (typeof v.autoSend === "boolean") setAutoSend(v.autoSend);
+      if (typeof v.speakReplies === "boolean") setSpeakReplies(v.speakReplies);
+    } catch { /* sem armazenamento: usa o padrão */ }
+  }, []);
+  const savePrefs = (next: { autoSend: boolean; speakReplies: boolean }) => {
+    try { localStorage.setItem("agenda-voz", JSON.stringify(next)); } catch { /* ignora */ }
+  };
+
+  const voice = useVoice({
+    onFinal: (spoken) => {
+      if (autoSend) send(undefined, spoken);
+      else setText((t) => (t ? `${t} ${spoken}` : spoken));
+    },
+  });
 
   const loadPosts = useCallback(async () => {
     const d = await api<{ posts: Post[]; delivery: "metricool" | "manual" }>("/api/posts");
@@ -73,9 +96,9 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
     setMessages([]);
   }
 
-  async function send(e?: React.FormEvent) {
+  async function send(e?: React.FormEvent, override?: string) {
     e?.preventDefault();
-    const t = text.trim();
+    const t = (override ?? text).trim();
     if (!t || busy) return;
     setBusy(true);
     setText("");
@@ -89,6 +112,8 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
       }
       const res = await api<{ messages: Msg[] }>(`/api/agenda/conversations/${id}/messages`, { method: "POST", json: { text: t, mediaIds: ids } });
       setMessages((m) => [...m.filter((x) => x.id !== "tmp"), ...res.messages]);
+      const reply = res.messages.filter((m) => m.role === "assistant").map((m) => m.content).join(" ");
+      if (speakReplies && reply) speak(reply);
       setAttached([]);
       const touched = res.messages.flatMap((m) => m.payload?.postIds ?? []);
       await loadPosts();
@@ -159,13 +184,31 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
             {attached.map((a) => <span key={a.id} className="chip chip-wood">📎 {a.label} <button className="btn-ghost" style={{ border: 0, background: "none", cursor: "pointer" }} aria-label="Remover" onClick={() => setAttached((x) => x.filter((y) => y.id !== a.id))}>✕</button></span>)}
           </div>
         )}
+        {voice.error && <div className="alert small" style={{ marginBottom: 8 }} role="alert">{voice.error} <button className="btn btn-ghost btn-xs" onClick={voice.clearError}>OK</button></div>}
         <form className="composer" style={{ boxShadow: "none" }} onSubmit={send}>
           <button type="button" className="btn btn-ghost icon-btn" title="Anexar mídia das pastas" aria-label="Anexar mídia" onClick={() => setPicking(true)}>📎</button>
-          <textarea rows={1} value={text} placeholder="Ex.: coloca o vídeo da Casa 12 para sexta às 19h" onChange={(e) => setText(e.target.value)}
+          <button
+            type="button"
+            className={`btn icon-btn mic ${voice.listening ? "mic-on" : "btn-ghost"}`}
+            disabled={!canAct || busy}
+            title={!voice.supported ? "Seu navegador não tem reconhecimento de voz. Use o Chrome, o Edge ou o Safari." : voice.listening ? "Parar e enviar" : "Falar o pedido"}
+            aria-label={voice.listening ? "Parar de ouvir" : "Falar o pedido"}
+            aria-pressed={voice.listening}
+            onClick={() => (voice.listening ? voice.stop() : voice.start())}
+          >🎙️</button>
+          <textarea rows={1} value={voice.listening ? voice.interim : text} readOnly={voice.listening}
+            placeholder={voice.listening ? "Ouvindo… fale o pedido" : "Ex.: coloca o vídeo da Casa 12 para sexta às 19h"} onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} aria-label="Mensagem" />
           <button className="btn btn-primary" disabled={!text.trim() || busy || !canAct}>{busy ? <span className="spinner" /> : "Enviar"}</button>
         </form>
         {!canAct && <div className="tiny muted" style={{ marginTop: 6 }}>Seu acesso é só de leitura. Donos e gerentes agendam posts.</div>}
+        {canAct && (
+          <div className="row tiny muted" style={{ marginTop: 8, gap: 14 }}>
+            {voice.listening && <span className="listening-dot">● Ouvindo. Toque no microfone para terminar.</span>}
+            <label className="check"><input type="checkbox" checked={autoSend} onChange={(e) => { setAutoSend(e.target.checked); savePrefs({ autoSend: e.target.checked, speakReplies }); }} /> Enviar ao terminar de falar</label>
+            <label className="check"><input type="checkbox" checked={speakReplies} onChange={(e) => { setSpeakReplies(e.target.checked); if (!e.target.checked) stopSpeaking(); savePrefs({ autoSend, speakReplies: e.target.checked }); }} /> 🔊 Ouvir as respostas</label>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -203,6 +246,7 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
           <p className="lead">Peça em português e a IA monta o post com legenda e hashtags. Nada é publicado sem a confirmação de um dono ou gerente.</p>
         </div>
       </div>
+      <InstagramWidget compact />
       <div className="tabs agenda-tabs">
         <button className={tab === "conversa" ? "on" : ""} onClick={() => setTab("conversa")}>💬 Conversa</button>
         <button className={tab === "calendario" ? "on" : ""} onClick={() => setTab("calendario")}>📅 Calendário{pendingCount ? ` (${pendingCount})` : ""}</button>

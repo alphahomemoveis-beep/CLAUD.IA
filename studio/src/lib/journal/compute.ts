@@ -89,3 +89,18 @@ export function fmtPct(v: number | null) {
   if (v == null) return "—";
   return `${v > 0 ? "+" : ""}${v.toLocaleString("pt-BR", { maximumFractionDigits: 1, minimumFractionDigits: 1 })}%`;
 }
+
+/** Intervalo de atualização do widget do Instagram. */
+export const WIDGET_REFRESH_MS = 3 * 60 * 60 * 1000;
+
+/** true quando os dados estão velhos e devem ser buscados de novo. */
+export function isStale(lastSyncIso: string | null, now = Date.now(), every = WIDGET_REFRESH_MS) {
+  if (!lastSyncIso) return true;
+  return now - new Date(lastSyncIso).getTime() >= every;
+}
+
+/** Próxima atualização prevista: última sincronização + intervalo (ou agora, se já passou). */
+export function nextRefreshAt(lastSyncIso: string | null, now = Date.now(), every = WIDGET_REFRESH_MS) {
+  if (!lastSyncIso) return new Date(now).toISOString();
+  return new Date(Math.max(now, new Date(lastSyncIso).getTime() + every)).toISOString();
+}

@@ -7,6 +7,7 @@ import { STAGE_LABEL, STAGE_ORDER, TYPE_LABEL } from "@/lib/labels";
 import { Toast } from "../Modal";
 import { BriefingCard, ConceptsCard, PlanCard, QualityCard, ReferencesCard, ResearchCard } from "./Cards";
 import { ImageTile } from "./ImageTile";
+import { InstagramWidget } from "../InstagramWidget";
 import type { Action, ChatImage, ChatMessage, ChatProject, PlanStatus } from "./types";
 
 interface Loaded {
@@ -186,6 +187,7 @@ export function ChatView({ initialId }: { initialId?: string }) {
               <Link href="/memoria">ver memória</Link>
             </div>
           )}
+          <div style={{ width: "100%", maxWidth: 920, marginTop: 30, textAlign: "left" }}><InstagramWidget compact /></div>
         </div>
       </div>
     );

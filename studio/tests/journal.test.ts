@@ -42,3 +42,22 @@ describe("jornal: ranking", () => {
     expect(r[1].crescimento.variacao_pct).toBe(11.1);
   });
 });
+
+describe("widget: atualização a cada 3 horas", () => {
+  const h = 3600_000;
+  const now = Date.parse("2026-10-02T15:00:00Z");
+  it("sem sincronização anterior, está velho", async () => {
+    const { isStale } = await import("@/lib/journal/compute");
+    expect(isStale(null, now)).toBe(true);
+  });
+  it("2h59 depois ainda está fresco; 3h depois precisa atualizar", async () => {
+    const { isStale } = await import("@/lib/journal/compute");
+    expect(isStale(new Date(now - (3 * h - 60_000)).toISOString(), now)).toBe(false);
+    expect(isStale(new Date(now - 3 * h).toISOString(), now)).toBe(true);
+  });
+  it("próxima atualização é a última + 3h, nunca no passado", async () => {
+    const { nextRefreshAt } = await import("@/lib/journal/compute");
+    expect(nextRefreshAt(new Date(now - h).toISOString(), now)).toBe(new Date(now + 2 * h).toISOString());
+    expect(nextRefreshAt(new Date(now - 5 * h).toISOString(), now)).toBe(new Date(now).toISOString());
+  });
+});

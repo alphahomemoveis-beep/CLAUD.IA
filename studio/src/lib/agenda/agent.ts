@@ -154,7 +154,10 @@ Regras:
 - Se houver mais de uma mídia possível e o pedido for ambíguo, mostre as opções (pasta, etapa, data) e pergunte.
 - Se não encontrar a mídia, diga isso e peça para enviar em 🗂️ Pastas. Não invente ids.
 - Publicação nesta conta: ${delivery}.
-- Responda em português, em poucas frases.`;
+- O pedido pode vir de voz transcrita: sem pontuação, números por extenso ("dezenove horas", "dia três") e erros
+  de transcrição (ex.: "Alfa Romeo" ou "alfa rôme" quer dizer AlphaHome; "la paloma" pode vir como "lá paloma").
+  Interprete com bom senso e, se algo importante ficar ambíguo, pergunte.
+- Responda em português, em poucas frases curtas, porque a resposta pode ser lida em voz alta.`;
 
   const history = (await listMessages(conversationId))
     .filter((m) => m.role !== "system" && m.content)

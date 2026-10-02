@@ -9,7 +9,7 @@ import { competitors, listScheduledPosts, metricoolConfig, timeline } from "../s
 import { instagramDaily, windsorConfigured } from "../social/windsor";
 import { utcToLocal } from "../agenda/time";
 import { dataBlock } from "../studio/rules";
-import { addDays, computeKpis, fmtPct, ranking, type DayRow } from "./compute";
+import { addDays, computeKpis, fmtPct, isStale, nextRefreshAt, ranking, WIDGET_REFRESH_MS, type DayRow } from "./compute";
 
 const today = () => utcToLocal(new Date(), env().APP_TIMEZONE).slice(0, 10);
 
@@ -230,3 +230,92 @@ As recomendações devem ser práticas: formato, horário, tipo de ambiente, fre
     [brand.id, j.days, j.end, JSON.stringify(resumo), JSON.stringify(data), userId]);
   return data;
 }
+
+// Widget do Instagram ------------------------------------------------------------
+
+let syncing: Promise<unknown> | null = null;
+
+async function lastSuccessfulSync(brandId: string) {
+  const row = await queryOne<{ at: string | null }>(
+    `SELECT MAX(created_at) AS at FROM sync_runs WHERE brand_id = $1 AND ok`, [brandId]);
+  return row?.at ?? null;
+}
+
+async function lastAttempt(brandId: string) {
+  const row = await queryOne<{ at: string | null }>(`SELECT MAX(created_at) AS at FROM sync_runs WHERE brand_id = $1`, [brandId]);
+  return row?.at ?? null;
+}
+
+/**
+ * Se a última sincronização tiver mais de 3 horas, busca dados novos.
+ * Uma tentativa por vez, e no máximo uma tentativa a cada 3 horas mesmo
+ * quando a integração falha, para não martelar as APIs.
+ */
+export async function refreshIfStale(brand: Brand, force = false) {
+  const configured = windsorConfigured() || !!metricoolConfig(brand.integrations?.metricool_blog_id)?.blogId;
+  if (!configured) return { refreshed: false, reason: "sem_integracao" as const };
+  const attempt = await lastAttempt(brand.id);
+  if (!force && !isStale(attempt)) return { refreshed: false, reason: "recente" as const };
+  if (force && !isStale(attempt, Date.now(), 5 * 60_000)) return { refreshed: false, reason: "recente" as const };
+  if (!syncing) {
+    syncing = Promise.all([syncWindsor(brand, 14), syncMetricool(brand, 14), syncPostStatuses(brand)])
+      .catch((err) => log.warn("widget_sincronizacao_falhou", { err }))
+      .finally(() => { syncing = null; });
+  }
+  await syncing;
+  return { refreshed: true, reason: "atualizado" as const };
+}
+
+export async function buildWidget(brand: Brand) {
+  const end = today();
+  const own = await queryOne<{ id: string; handle: string }>(
+    `SELECT id, handle FROM tracked_profiles WHERE brand_id = $1 AND is_own LIMIT 1`, [brand.id]);
+  const rows = own ? await dailyRows(own.id, addDays(end, -30), end) : [];
+  const day = computeKpis(rows, end, 1);
+  const week = computeKpis(rows, end, 7);
+  const spark = rows.filter((r) => r.followers != null && r.day >= addDays(end, -13)).map((r) => ({ day: r.day, followers: r.followers as number }));
+  const rank = await query<{ id: string; is_own: boolean; followers: number | null }>(
+    `SELECT tp.id, tp.is_own,
+            (SELECT pm.followers FROM profile_metrics pm WHERE pm.profile_id = tp.id AND pm.followers IS NOT NULL
+              ORDER BY pm.day DESC, CASE pm.source WHEN 'windsor' THEN 1 WHEN 'metricool' THEN 2 ELSE 3 END LIMIT 1)::float AS followers
+       FROM tracked_profiles tp WHERE tp.brand_id = $1`, [brand.id]);
+  const ranked = rank.filter((r) => r.followers != null).sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0));
+  const position = ranked.findIndex((r) => r.is_own) + 1;
+  const next = await queryOne<{ scheduled_at: string; post_type: string; timezone: string }>(
+    `SELECT scheduled_at, post_type, timezone FROM scheduled_posts
+      WHERE brand_id = $1 AND status = 'agendado' AND scheduled_at > now() ORDER BY scheduled_at LIMIT 1`, [brand.id]);
+  const upcoming = await queryOne<{ n: number }>(
+    `SELECT COUNT(*)::int AS n FROM scheduled_posts WHERE brand_id = $1 AND status = 'agendado' AND scheduled_at BETWEEN now() AND now() + interval '7 days'`, [brand.id]);
+  const pending = await queryOne<{ n: number }>(
+    `SELECT COUNT(*)::int AS n FROM scheduled_posts WHERE brand_id = $1 AND (status = 'rascunho' OR pending_action IS NOT NULL) AND scheduled_at > now()`, [brand.id]);
+  const lastSync = await lastSuccessfulSync(brand.id);
+  const attempt = await lastAttempt(brand.id);
+  const lastData = await queryOne<{ at: string | null; manual: boolean | null }>(
+    `SELECT MAX(pm.synced_at) AS at, bool_and(pm.source = 'manual') AS manual FROM profile_metrics pm
+       JOIN tracked_profiles tp ON tp.id = pm.profile_id WHERE tp.brand_id = $1`, [brand.id]);
+  const lastError = await queryOne<{ source: string; message: string; created_at: string }>(
+    `SELECT source, message, created_at FROM sync_runs WHERE brand_id = $1 AND NOT ok AND created_at >= COALESCE($2::timestamptz, 'epoch') ORDER BY created_at DESC LIMIT 1`,
+    [brand.id, lastSync]);
+  return {
+    handle: own?.handle ?? brand.integrations?.instagram_handle ?? null,
+    followers: day.seguidores,
+    followers7: week.seguidores,
+    reach7: week.reach,
+    views7: week.views.atual != null ? week.views : week.impressions,
+    profileViews7: week.profile_views,
+    spark,
+    ranking: { position: position || null, total: ranked.length },
+    nextPost: next ? { at: next.scheduled_at, type: next.post_type, timezone: next.timezone } : null,
+    upcoming7: upcoming?.n ?? 0,
+    pendingConfirmation: pending?.n ?? 0,
+    lastSyncAt: lastSync,
+    lastDataAt: lastData?.at ?? null,
+    onlyManual: !lastSync && !!lastData?.manual,
+    lastAttemptAt: attempt,
+    lastError: lastError ? `${lastError.source}: ${lastError.message.slice(0, 140)}` : null,
+    nextRefreshAt: nextRefreshAt(attempt),
+    refreshEveryMs: WIDGET_REFRESH_MS,
+    integrations: { windsor: windsorConfigured(), metricool: !!metricoolConfig(brand.integrations?.metricool_blog_id)?.blogId },
+  };
+}
+export type Widget = Awaited<ReturnType<typeof buildWidget>>;
