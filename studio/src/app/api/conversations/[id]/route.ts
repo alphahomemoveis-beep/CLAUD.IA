@@ -2,7 +2,7 @@ import { z } from "zod";
 import { json, route } from "@/lib/api";
 import { query } from "@/lib/db";
 import { notFound } from "@/lib/errors";
-import { getBrand } from "@/lib/repo/brand";
+import { effectiveAI, getBrand } from "@/lib/repo/brand";
 import { getConversation, getProjectByConversation, listMessages } from "@/lib/repo/projects";
 import { loadImagesForMessages, loadPlanStatus } from "@/lib/studio/views";
 
@@ -14,7 +14,7 @@ export const GET = route<P>(async ({ params }) => {
   if (!conversation) throw notFound("Conversa não encontrada.");
   const [messages, project] = await Promise.all([listMessages(conversation.id), getProjectByConversation(conversation.id)]);
   const [images, plans] = project ? await Promise.all([loadImagesForMessages(project.id), loadPlanStatus(project.id)]) : [[], []];
-  return json({ conversation, project, messages, images, plans });
+  return json({ conversation, project, messages, images, plans, imageMode: effectiveAI(brand).imageProvider });
 });
 
 const Patch = z.object({ title: z.string().min(1).max(120).optional(), archived: z.boolean().optional() });

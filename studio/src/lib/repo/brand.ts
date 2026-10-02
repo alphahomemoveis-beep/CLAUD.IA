@@ -1,6 +1,6 @@
 import "server-only";
 import { query, queryOne } from "../db";
-import { env } from "../env";
+import { defaultEmbeddingModel, defaultTextModel, env } from "../env";
 
 export interface BrandIdentity {
   atributos?: string;
@@ -26,8 +26,14 @@ export interface AISettings {
   max_references?: number;
 }
 
+export interface Integrations {
+  metricool_blog_id?: string;
+  instagram_handle?: string;
+}
+
 export interface Brand {
   id: string;
+  integrations: Integrations;
   name: string;
   positioning: string;
   identity: BrandIdentity;
@@ -36,16 +42,27 @@ export interface Brand {
   updated_at: string;
 }
 
+/** Modelo salvo só vale se for do provedor ativo (evita mandar "gpt-5.5" ao Claude). */
+function compatible(model: string | undefined, provider: string) {
+  if (!model) return undefined;
+  if (provider === "anthropic") return model.startsWith("claude-") ? model : undefined;
+  if (provider === "openai") return model.startsWith("claude-") ? undefined : model;
+  return model;
+}
+
 /** Configuração efetiva: o que foi salvo na marca, com os padrões do servidor. */
 export function effectiveAI(brand: Brand) {
   const e = env();
   const s = brand.ai_settings ?? {};
+  const textModel = compatible(s.text_model, e.AI_PROVIDER) ?? e.AI_TEXT_MODEL ?? defaultTextModel(e.AI_PROVIDER);
   return {
     provider: e.AI_PROVIDER,
-    textModel: s.text_model || e.AI_TEXT_MODEL,
-    visionModel: s.vision_model || e.AI_VISION_MODEL,
+    imageProvider: e.IMAGE_PROVIDER,
+    embeddingProvider: e.EMBEDDING_PROVIDER,
+    textModel,
+    visionModel: compatible(s.vision_model, e.AI_PROVIDER) ?? e.AI_VISION_MODEL ?? textModel,
     imageModel: s.image_model || e.AI_IMAGE_MODEL,
-    embeddingModel: e.AI_EMBEDDING_MODEL,
+    embeddingModel: e.AI_EMBEDDING_MODEL ?? defaultEmbeddingModel(e.EMBEDDING_PROVIDER),
     imageQuality: s.image_quality ?? "high",
     webSearch: s.web_search ?? true,
     conceptCount: Math.min(5, Math.max(3, s.concept_count ?? 5)),
@@ -61,12 +78,12 @@ export async function getBrand(): Promise<Brand> {
   return brand;
 }
 
-export async function updateBrand(id: string, patch: Partial<Pick<Brand, "name" | "positioning" | "identity" | "ai_settings" | "logo_file_key">>) {
+export async function updateBrand(id: string, patch: Partial<Pick<Brand, "name" | "positioning" | "identity" | "ai_settings" | "logo_file_key" | "integrations">>) {
   const fields: string[] = [];
   const values: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
     if (v === undefined) continue;
-    values.push(k === "identity" || k === "ai_settings" ? JSON.stringify(v) : v);
+    values.push(k === "identity" || k === "ai_settings" || k === "integrations" ? JSON.stringify(v) : v);
     fields.push(`${k} = $${values.length}`);
   }
   if (!fields.length) return getBrand();

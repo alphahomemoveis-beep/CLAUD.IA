@@ -1,5 +1,5 @@
 import "server-only";
-import { ai } from "../ai";
+import { text as llm } from "../ai";
 import { REFERENCE_CATEGORIES, ReferenceAnalysisSchema, type ReferenceAnalysis } from "../ai/schemas";
 import { query, queryOne, tx } from "../db";
 import { log } from "../logger";
@@ -72,7 +72,7 @@ export async function analyzeReference(id: string): Promise<ReferenceRow> {
   try {
     const file = await storage().get(ref.file_key);
     if (!file) throw new Error("Arquivo da referência não encontrado no armazenamento.");
-    const { data } = await ai().structured({
+    const { data } = await llm().structured({
       schemaName: "analise_referencia",
       schema: ReferenceAnalysisSchema,
       model: cfg.visionModel,

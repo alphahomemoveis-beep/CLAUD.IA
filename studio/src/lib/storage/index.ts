@@ -14,7 +14,7 @@ export interface Storage {
 const KEY_RE = /^[a-z0-9-]+\/[a-zA-Z0-9-]+\.[a-z0-9]{2,5}$/;
 
 /** Chaves sempre geradas pelo servidor: pasta/uuid.ext. Nunca usam o nome enviado. */
-export function newKey(folder: "referencias" | "geradas" | "marca", ext: string) {
+export function newKey(folder: "referencias" | "geradas" | "marca" | "pastas", ext: string) {
   return `${folder}/${randomUUID()}.${ext.toLowerCase()}`;
 }
 

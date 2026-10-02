@@ -98,11 +98,11 @@ export interface ImageRow {
 }
 
 // Conversas ------------------------------------------------------------------
-export const getConversation = (id: string, brandId: string) =>
-  queryOne<Conversation>(`SELECT * FROM conversations WHERE id = $1 AND brand_id = $2`, [id, brandId]);
+export const getConversation = (id: string, brandId: string, kind: "estudio" | "agenda" = "estudio") =>
+  queryOne<Conversation>(`SELECT * FROM conversations WHERE id = $1 AND brand_id = $2 AND kind = $3`, [id, brandId, kind]);
 
-export const createConversation = (brandId: string, userId: string) =>
-  queryOne<Conversation>(`INSERT INTO conversations (brand_id, user_id) VALUES ($1,$2) RETURNING *`, [brandId, userId]) as Promise<Conversation>;
+export const createConversation = (brandId: string, userId: string, kind: "estudio" | "agenda" = "estudio") =>
+  queryOne<Conversation>(`INSERT INTO conversations (brand_id, user_id, kind) VALUES ($1,$2,$3) RETURNING *`, [brandId, userId, kind]) as Promise<Conversation>;
 
 export const listMessages = (conversationId: string) =>
   query<Message>(`SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at, id`, [conversationId]);

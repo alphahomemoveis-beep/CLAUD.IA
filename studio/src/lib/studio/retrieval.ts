@@ -1,9 +1,10 @@
 import "server-only";
 import { query, toVector } from "../db";
-import { ai } from "../ai";
+import { embeddings } from "../ai";
 import type { EffectiveAI } from "../repo/brand";
 import type { ReferenceAnalysis } from "../ai/schemas";
 import { log } from "../logger";
+import { toTsQuery } from "./tsquery";
 
 export interface RetrievedReference {
   id: string;
@@ -26,7 +27,7 @@ export interface RetrievedReference {
 }
 
 export function embeddingModelName(cfg: EffectiveAI) {
-  return cfg.provider === "mock" ? "mock-hash-256" : cfg.embeddingModel;
+  return embeddings()?.model ?? cfg.embeddingModel;
 }
 
 /** Texto que representa a referência na busca semântica. */
@@ -55,13 +56,14 @@ export async function indexReference(referenceId: string, cfg: EffectiveAI) {
   if (!ref) return;
   const content = referenceEmbeddingText(ref);
   const model = embeddingModelName(cfg);
-  const [vector] = await ai().embed([content], cfg.embeddingModel);
+  const provider = embeddings();
+  const vector = provider ? (await provider.embed([content]))[0] : null;
   await query(
     `INSERT INTO visual_embeddings (reference_id, model, dimensions, content, embedding)
      VALUES ($1,$2,$3,$4,$5::vector)
      ON CONFLICT (reference_id, model) DO UPDATE
        SET content = EXCLUDED.content, embedding = EXCLUDED.embedding, dimensions = EXCLUDED.dimensions, created_at = now()`,
-    [referenceId, model, vector.length, content, toVector(vector)],
+    [referenceId, model, vector?.length ?? 0, content, vector ? toVector(vector) : null],
   );
 }
 
@@ -74,22 +76,42 @@ const SELECT_REF = `r.id, r.name, r.category, r.status, r.favorite, r.rating, r.
  */
 export async function retrieveReferences(brandId: string, text: string, cfg: EffectiveAI, limit = cfg.maxReferences): Promise<RetrievedReference[]> {
   const model = embeddingModelName(cfg);
+  const provider = embeddings();
   try {
-    const [vector] = await ai().embed([text], cfg.embeddingModel);
-    const rows = await query<RetrievedReference>(
-      `SELECT ${SELECT_REF}, 1 - (e.embedding <=> $1::vector) AS similarity
-         FROM visual_references r
-         JOIN visual_embeddings e ON e.reference_id = r.id AND e.model = $2 AND e.dimensions = $3
-        WHERE r.brand_id = $4 AND (r.status = 'aprovada' OR (r.favorite AND r.status <> 'rejeitada'))
-        ORDER BY (1 - (e.embedding <=> $1::vector))
-                 + CASE WHEN r.favorite THEN 0.08 ELSE 0 END
-                 + COALESCE(r.rating, 3) * 0.01 DESC
-        LIMIT $5`,
-      [toVector(vector), model, vector.length, brandId, limit],
-    );
-    if (rows.length) return rows;
+    if (provider) {
+      const [vector] = await provider.embed([text]);
+      const rows = await query<RetrievedReference>(
+        `SELECT ${SELECT_REF}, 1 - (e.embedding <=> $1::vector) AS similarity
+           FROM visual_references r
+           JOIN visual_embeddings e ON e.reference_id = r.id AND e.model = $2 AND e.dimensions = $3
+          WHERE r.brand_id = $4 AND (r.status = 'aprovada' OR (r.favorite AND r.status <> 'rejeitada'))
+          ORDER BY (1 - (e.embedding <=> $1::vector))
+                   + CASE WHEN r.favorite THEN 0.08 ELSE 0 END
+                   + COALESCE(r.rating, 3) * 0.01 DESC
+          LIMIT $5`,
+        [toVector(vector), model, vector.length, brandId, limit],
+      );
+      if (rows.length) return rows;
+    } else {
+      // Sem provedor de embeddings: busca de texto completo em português.
+      const tsq = toTsQuery(text);
+      if (tsq) {
+        const rows = await query<RetrievedReference>(
+          `SELECT ${SELECT_REF}, ts_rank(to_tsvector('portuguese', e.content), to_tsquery('portuguese', $1)) AS similarity
+             FROM visual_references r
+             JOIN visual_embeddings e ON e.reference_id = r.id AND e.model = $2
+            WHERE r.brand_id = $3 AND (r.status = 'aprovada' OR (r.favorite AND r.status <> 'rejeitada'))
+            ORDER BY ts_rank(to_tsvector('portuguese', e.content), to_tsquery('portuguese', $1))
+                     + CASE WHEN r.favorite THEN 0.05 ELSE 0 END
+                     + COALESCE(r.rating, 3) * 0.01 DESC
+            LIMIT $4`,
+          [tsq, model, brandId, limit],
+        );
+        if (rows.some((r) => (r.similarity ?? 0) > 0)) return rows;
+      }
+    }
   } catch (err) {
-    log.warn("busca_semantica_falhou", { err });
+    log.warn("busca_referencias_falhou", { err });
   }
   // Sem embeddings ainda: usa as aprovadas mais bem avaliadas.
   return query<RetrievedReference>(

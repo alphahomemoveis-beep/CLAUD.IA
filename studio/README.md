@@ -3,6 +3,17 @@
 Plataforma privada de direção criativa da AlphaHome Ambientes Planejados. A marca é configurada uma vez e
 todo chat novo já sabe quem é a AlphaHome, qual é a estética, quais referências usar e o que evitar.
 
+O cérebro do estúdio é o **Claude** (Anthropic). Além do estúdio criativo, o app tem:
+
+- **🗂️ Pastas de obras:** árvore livre (ex.: "Condomínio La Paloma" > "Casa 12"), cada pasta com as etapas
+  **Projeto**, **Obra** e **Resultado** para fotos e vídeos.
+- **📅 Agenda de posts por conversa:** "coloca o vídeo do resultado da Casa 12 para sexta às 19h". O Claude acha a
+  mídia nas pastas, escreve legenda e hashtags e cria um rascunho. Um dono ou gerente confirma, e o post vai para o
+  Metricool, que publica na hora marcada.
+- **📰 Jornal:** seguidores, alcance, visualizações, visitas e interações com setas de alta e queda contra o período
+  anterior, ranking de seguidores com concorrentes e um editorial escrito pelo Claude só com os números calculados.
+- **Login:** primeiro acesso em `/primeiro-acesso`, papéis Dono, Gerente e Leitura, troca de senha.
+
 > A IA propõe. Você escolhe. A IA executa. Nunca inverter essa ordem.
 
 ## Fluxo
@@ -32,17 +43,23 @@ Estas regras não dependem só do prompt. O servidor recusa o que as viola.
 | Tendência atual só com fonte citada pela busca na web | `guards.ts`; o resto vira referência histórica |
 | Editar o Prompt Mestre cria versão nova; apagar exige digitar a versão | `api/master-prompts`, `api/prompt-versions` |
 | Feedback com comentário vira preferência reaplicável | `src/lib/studio/feedback.ts` |
+| A IA da agenda só cria rascunhos; publicar exige dono ou gerente | `src/lib/agenda/posts.ts` |
+| Link público de mídia só com assinatura e prazo | `src/lib/social/signing.ts` |
+| O editorial do jornal só usa números calculados pelo app | `src/lib/journal/service.ts` |
 
 ## Arquitetura
 
 - **Frontend e backend:** Next.js 16 (App Router) com TypeScript. As rotas em `src/app/api` são o backend.
-- **IA:** interface única `AIProvider` em `src/lib/ai/types.ts`.
-  - `openai-provider.ts` usa a Responses API com saída estruturada estrita (`json_schema`), a ferramenta
-    `web_search`, entrada de imagem para análise das referências, a Image API para gerar e editar imagens
-    e a Embeddings API.
-  - `mock-provider.ts` responde sem chamar nada, para testar o fluxo e a interface sem custo.
-  - Os modelos são configuráveis por variável de ambiente e pela tela Configurações. Trocar de empresa
-    é escrever outro provedor com a mesma interface.
+- **IA:** três interfaces em `src/lib/ai/types.ts`, cada uma com o seu provedor.
+  - **Texto, visão, pesquisa e agente:** `anthropic-provider.ts` (padrão, modelo `claude-opus-5-5`). Usa saída
+    estruturada (`output_config.format`), a busca na web do servidor da Anthropic (`web_search_20260209`), imagens
+    em base64 para analisar referências e ferramentas com `strict: true` para a agenda. Recusas por segurança
+    são reencaminhadas pela API com `fallbacks: "default"`.
+  - **Imagem:** o Claude não gera imagens. O padrão é o modo **manual**: o app escreve o prompt final aprovado no
+    checklist, você gera onde preferir e envia a peça pronta. Com `IMAGE_PROVIDER=openai` a geração é automática.
+  - **Busca de referências:** sem provedor de embeddings, usa texto completo em português no PostgreSQL. Com
+    `EMBEDDING_PROVIDER=voyage`, usa embeddings do Voyage AI com pgvector.
+  - `mock-provider.ts` simula tudo sem custo, para testar o fluxo e a interface.
 - **Memória:** PostgreSQL + pgvector. A memória da marca (`src/lib/studio/context.ts`) junta regras do
   estúdio, identidade, Prompt Mestre ativo, preferências e histórico. As referências são buscadas por
   semelhança a cada pedido. Nenhum modelo é retreinado.
@@ -58,6 +75,23 @@ Migração em `db/migrations/001_init.sql`. Tabelas pedidas no briefing:
 
 Todas as tabelas de conteúdo apontam para `brand_settings`, o que prepara o app para mais de uma marca.
 
+## Agenda, Metricool e Windsor.ai
+
+- **Rascunho antes de publicar:** a IA só cria rascunhos. Publicar, alterar um post já agendado e cancelar
+  exigem a confirmação de um dono ou gerente. Alterar um post agendado o devolve a rascunho.
+- **Regras conferidas no servidor:** Reels com um vídeo, carrossel com 2 a 10 mídias, legenda até 2.200
+  caracteres com as hashtags, horário pelo menos 5 minutos no futuro. Hora local no fuso `APP_TIMEZONE`.
+- **Metricool:** com `METRICOOL_USER_TOKEN`, `METRICOOL_USER_ID` e a marca (blogId) escolhida em Configurações >
+  Integrações, a confirmação cria o post em `POST /v2/scheduler/posts`. As mídias vão por links temporários e
+  assinados (`/api/public/media/...`), por isso o app precisa de `APP_URL` público e `APP_SECRET`. Sem Metricool,
+  o post confirmado fica na agenda como lembrete de publicação manual.
+- **Windsor.ai:** com `WINDSOR_API_KEY`, o jornal busca seguidores, alcance, impressões e visitas do Instagram da
+  marca. O Instagram precisa estar conectado na conta do Windsor.ai.
+- **Concorrentes:** os concorrentes cadastrados no Metricool entram no ranking. Perfis podem ser adicionados e
+  ter números lançados à mão no próprio jornal.
+- **Sincronização:** botão "Sincronizar agora" no jornal, ou um agendador chamando `/api/cron/sync` com
+  `Authorization: Bearer CRON_SECRET` (também marca como publicados os posts que o Metricool já publicou).
+
 ## Como rodar
 
 Requisitos: Node 22 e PostgreSQL 15+ com pgvector.
@@ -65,11 +99,11 @@ Requisitos: Node 22 e PostgreSQL 15+ com pgvector.
 ```bash
 cd studio
 npm install
-cp .env.example .env.local          # preencha DATABASE_URL e OPENAI_API_KEY
+cp .env.example .env.local          # preencha DATABASE_URL, ANTHROPIC_API_KEY e APP_SECRET
 docker compose up -d                # opcional: banco local com pgvector
 npm run db:migrate
-SEED_ADMIN_EMAIL=voce@exemplo.com SEED_ADMIN_PASSWORD='umaSenhaForte123' npm run db:seed
-npm run dev                         # http://localhost:3000
+npm run db:seed                     # marca e Prompt Mestre iniciais
+npm run dev                         # http://localhost:3000 > crie a conta do dono no primeiro acesso
 ```
 
 Para testar sem a OpenAI, use `AI_PROVIDER=mock`. As imagens viram marcadores de teste e a pesquisa avisa que é simulada.
@@ -87,7 +121,8 @@ npm run build
 
 ## Produção
 
-- A chave da OpenAI fica só em variável de ambiente do servidor. Nada com credencial vai para o navegador.
+- As chaves (Anthropic, Metricool, Windsor, OpenAI) ficam só em variáveis de ambiente do servidor. Nada com
+  credencial vai para o navegador.
 - Em hospedagem sem disco persistente (Vercel e similares), use `STORAGE_DRIVER=supabase`.
 - As rotas de IA declaram até 300 segundos de execução. Confira o limite do seu plano de hospedagem.
 - O limite de requisições fica em memória, por instância. Com várias instâncias, troque por Redis.
@@ -97,17 +132,21 @@ npm run build
 
 | Uso | Variável | Padrão |
 |---|---|---|
-| Texto, planejamento e pesquisa | `AI_TEXT_MODEL` | `gpt-5.5` |
-| Análise de referências | `AI_VISION_MODEL` | `gpt-5.5` |
-| Imagem | `AI_IMAGE_MODEL` | `gpt-image-2.5-sunburst` |
-| Embeddings | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` |
-
-Os nomes vêm dos tipos do SDK oficial `openai` 7.27. Para imagens 4:5 e 9:16 o app pede tamanhos livres
-(1088x1360 e 1088x1936), aceitos pela família GPT Image 2. Em modelos mais antigos ele cai para 1024x1536.
+| Texto, planejamento, pesquisa, agenda e jornal | `AI_TEXT_MODEL` | `claude-opus-5-5` |
+| Análise de referências | `AI_VISION_MODEL` | igual ao de texto |
+| Imagem (só com `IMAGE_PROVIDER=openai`) | `AI_IMAGE_MODEL` | `gpt-image-2.5-sunburst` |
+| Embeddings (só com `EMBEDDING_PROVIDER=voyage`) | `AI_EMBEDDING_MODEL` | `voyage-3.5` |
 
 ## Limitações conhecidas
 
-- A integração com a OpenAI foi verificada por tipos e por esquema, mas não com chamadas reais: este
-  ambiente de desenvolvimento não tinha chave. O fluxo completo foi testado com o provedor de teste.
-- Vídeos entram na biblioteca, mas a análise automática é só para imagens. Descreva o vídeo nas notas.
-- A geração é síncrona, uma peça por requisição. Para filas longas, mova a geração para um worker.
+- Nenhuma integração externa foi testada com chave real neste ambiente: não havia chave da Anthropic, e a rede
+  bloqueava o Metricool. Todo o fluxo foi testado com o provedor de teste, e as falhas das integrações aparecem
+  com mensagem clara.
+- Os endpoints do Metricool seguem a documentação pública e um cliente de código aberto. Os nomes das séries de
+  métricas variam por conta: ajuste `METRICOOL_TIMELINE_METRICS` se o jornal não trouxer dados do Metricool.
+- Os campos do Windsor.ai seguem a lista pública do conector de Instagram e podem ser trocados por
+  `WINDSOR_INSTAGRAM_FIELDS`.
+- Vídeos entram nas pastas e na agenda, mas a análise automática da biblioteca é só para imagens.
+- Envios grandes de vídeo passam pelo servidor do app. Em hospedagens com limite de corpo de requisição, use o
+  Supabase Storage e ajuste `FOLDER_MAX_UPLOAD_MB`.
+- O limite de requisições fica em memória, por instância. Com várias instâncias, troque por Redis.

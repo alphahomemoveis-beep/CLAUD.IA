@@ -1,23 +1,25 @@
 import "server-only";
 import OpenAI, { toFile } from "openai";
 import type { ResponseInputItem } from "openai/resources/responses/responses";
-import type { AIProvider, ImageRequest, ImageResult, Source, StructuredRequest, StructuredResult } from "./types";
+import type { AgentResult, EmbeddingProvider, ImageProvider, ImageRequest, ImageResult, Source, StructuredRequest, StructuredResult, TextProvider } from "./types";
+import { AIError } from "./types";
 import { toStrictJsonSchema } from "./json-schema";
 import { log } from "../logger";
 
 /**
- * Provedor OpenAI.
- * - Texto, visão e pesquisa: Responses API com saída estruturada (json_schema estrito)
- *   e a ferramenta web_search.
- * - Imagens: Image API (generate, ou edit quando há imagens de referência).
- * - Embeddings: Embeddings API.
+ * Texto pela OpenAI (alternativa ao Claude): Responses API com saída
+ * estruturada estrita e a ferramenta web_search.
  */
-export class OpenAIProvider implements AIProvider {
+export class OpenAIText implements TextProvider {
   readonly name = "openai";
   private client: OpenAI;
 
   constructor(apiKey: string) {
     this.client = new OpenAI({ apiKey, maxRetries: 2, timeout: 180_000 });
+  }
+
+  async agent(): Promise<AgentResult> {
+    throw new AIError("A agenda por conversa usa o Claude. Configure AI_PROVIDER=anthropic.", "indisponivel");
   }
 
   async structured<T>(req: StructuredRequest<T>): Promise<StructuredResult<T>> {
@@ -73,9 +75,27 @@ export class OpenAIProvider implements AIProvider {
     throw lastError;
   }
 
-  async embed(texts: string[], model: string): Promise<number[][]> {
-    const res = await this.client.embeddings.create({ model, input: texts });
+}
+
+/** Embeddings pela OpenAI. */
+export class OpenAIEmbeddings implements EmbeddingProvider {
+  readonly name = "openai";
+  private client: OpenAI;
+  constructor(apiKey: string, readonly model: string) {
+    this.client = new OpenAI({ apiKey, maxRetries: 2 });
+  }
+  async embed(texts: string[]): Promise<number[][]> {
+    const res = await this.client.embeddings.create({ model: this.model, input: texts });
     return res.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
+  }
+}
+
+/** Geração de imagem pela Image API (o Claude não gera imagens). */
+export class OpenAIImages implements ImageProvider {
+  readonly name = "openai";
+  private client: OpenAI;
+  constructor(apiKey: string) {
+    this.client = new OpenAI({ apiKey, maxRetries: 2, timeout: 300_000 });
   }
 
   async image(req: ImageRequest): Promise<ImageResult> {

@@ -8,6 +8,8 @@ import type { ChatImage } from "./types";
 
 interface Props {
   image: ChatImage;
+  /** Sem gerador automático: copiar o prompt e enviar a imagem pronta. */
+  manual?: boolean;
   tall: boolean;
   canGenerate: boolean;
   onGenerate: (id: string) => void;
@@ -16,7 +18,7 @@ interface Props {
   readOnly?: boolean;
 }
 
-export function ImageTile({ image, tall, canGenerate, onGenerate, onUpdated, onNotice, readOnly }: Props) {
+export function ImageTile({ image, tall, canGenerate, onGenerate, onUpdated, onNotice, readOnly, manual }: Props) {
   const [dialog, setDialog] = useState<null | "rejeitar" | "alterar" | "prompt">(null);
   const [comment, setComment] = useState("");
   const [scope, setScope] = useState<"marca" | "projeto">("marca");
@@ -51,6 +53,29 @@ export function ImageTile({ image, tall, canGenerate, onGenerate, onUpdated, onN
     }
   }
 
+  async function uploadReady(file: File) {
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      const res = await api<{ image: ChatImage }>(`/api/images/${image.id}/upload`, { method: "POST", body: form });
+      onUpdated(res.image);
+    } catch (err) {
+      onNotice((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(image.prompt);
+      onNotice("Prompt final copiado. Gere a imagem e envie a peça pronta aqui.");
+    } catch {
+      setDialog("prompt");
+    }
+  }
+
   const src = `/api/images/${image.id}/file?v=${image.generated_at ?? ""}`;
 
   return (
@@ -58,10 +83,24 @@ export function ImageTile({ image, tall, canGenerate, onGenerate, onUpdated, onN
       <div className={`frame ${tall ? "tall" : ""}`}>
         <span className="badge chip">{image.slide_role || "Peça"} {pad(image.slide_number)} · v{pad(image.version)}</span>
         {image.status === "pronta" && image.has_file && <img src={src} alt={`Peça ${image.slide_number}`} onClick={() => setZoom(true)} />}
-        {image.status === "pendente" && (
+        {image.status === "pendente" && !manual && (
           <div className="stack" style={{ alignItems: "center" }}>
             <span className="small muted">Aguardando geração</span>
             {canGenerate && !readOnly && <button className="btn btn-sm" onClick={() => onGenerate(image.id)}>Gerar agora</button>}
+          </div>
+        )}
+        {image.status === "pendente" && manual && (
+          <div className="stack" style={{ alignItems: "center", padding: 14, textAlign: "center" }}>
+            <span className="small">Prompt final pronto e aprovado no checklist.</span>
+            {canGenerate && !readOnly && (
+              <>
+                <button className="btn btn-sm btn-primary" onClick={copyPrompt}>Copiar prompt</button>
+                <label className="btn btn-sm" style={{ cursor: "pointer" }}>
+                  {busy ? <span className="spinner" /> : "Enviar imagem pronta"}
+                  <input type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={(e) => e.target.files?.[0] && uploadReady(e.target.files[0])} />
+                </label>
+              </>
+            )}
           </div>
         )}
         {image.status === "gerando" && <div className="stack" style={{ alignItems: "center" }}><span className="spinner" /><span className="small muted">Gerando imagem…</span></div>}

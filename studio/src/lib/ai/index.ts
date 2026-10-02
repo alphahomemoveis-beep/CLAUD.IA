@@ -1,17 +1,41 @@
 import "server-only";
-import { env } from "../env";
-import { MockProvider } from "./mock-provider";
-import { OpenAIProvider } from "./openai-provider";
-import type { AIProvider } from "./types";
+import { defaultEmbeddingModel, env } from "../env";
+import { AnthropicProvider } from "./anthropic-provider";
+import { MockEmbeddings, MockImages, MockText } from "./mock-provider";
+import { OpenAIEmbeddings, OpenAIImages, OpenAIText } from "./openai-provider";
+import { VoyageEmbeddings } from "./voyage-embeddings";
+import type { EmbeddingProvider, ImageProvider, TextProvider } from "./types";
 
-let provider: AIProvider | null = null;
+let textP: TextProvider | null = null;
+let imageP: ImageProvider | null | undefined;
+let embedP: EmbeddingProvider | null | undefined;
 
-/** Provedor de IA escolhido por AI_PROVIDER. A chave nunca sai do servidor. */
-export function ai(): AIProvider {
-  if (provider) return provider;
+/** Cérebro do estúdio. Padrão: Claude. A chave nunca sai do servidor. */
+export function text(): TextProvider {
+  if (textP) return textP;
   const e = env();
-  provider = e.AI_PROVIDER === "mock" ? new MockProvider() : new OpenAIProvider(e.OPENAI_API_KEY!);
-  return provider;
+  textP = e.AI_PROVIDER === "anthropic" ? new AnthropicProvider(e.ANTHROPIC_API_KEY!)
+    : e.AI_PROVIDER === "openai" ? new OpenAIText(e.OPENAI_API_KEY!) : new MockText();
+  return textP;
+}
+
+/** Gerador de imagens, ou null no modo manual. */
+export function images(): ImageProvider | null {
+  if (imageP !== undefined) return imageP;
+  const e = env();
+  imageP = e.IMAGE_PROVIDER === "openai" ? new OpenAIImages(e.OPENAI_API_KEY!) : e.IMAGE_PROVIDER === "mock" ? new MockImages() : null;
+  return imageP;
+}
+
+/** Provedor de embeddings, ou null quando a busca é por texto completo. */
+export function embeddings(): EmbeddingProvider | null {
+  if (embedP !== undefined) return embedP;
+  const e = env();
+  const model = e.AI_EMBEDDING_MODEL ?? defaultEmbeddingModel(e.EMBEDDING_PROVIDER);
+  embedP = e.EMBEDDING_PROVIDER === "voyage" ? new VoyageEmbeddings(e.VOYAGE_API_KEY!, model)
+    : e.EMBEDDING_PROVIDER === "openai" ? new OpenAIEmbeddings(e.OPENAI_API_KEY!, model)
+    : e.EMBEDDING_PROVIDER === "mock" ? new MockEmbeddings() : null;
+  return embedP;
 }
 
 /** Tamanho da imagem para a proporção pedida, conforme o que o modelo aceita. */

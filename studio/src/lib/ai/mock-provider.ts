@@ -1,4 +1,4 @@
-import type { AIProvider, ImageRequest, ImageResult, StructuredRequest, StructuredResult } from "./types";
+import type { AgentRequest, AgentResult, AgentToolCall, EmbeddingProvider, ImageProvider, ImageRequest, ImageResult, StructuredRequest, StructuredResult, TextProvider } from "./types";
 import type { Answer, Briefing, ConceptData, ConceptSet, FeedbackLesson, FinalPrompts, PlanData, ReferenceAnalysis, ReplyIntent, Research, RevisedPrompt } from "./schemas";
 import { QUALITY_ITEMS } from "./schemas";
 import { detectEnvironments } from "../studio/environments";
@@ -9,7 +9,7 @@ import { parseReply } from "../studio/intent";
  * coerentes com o pedido, para testar o fluxo e a interface sem custo.
  * Nunca finge pesquisa real: a pesquisa simulada avisa que é simulada.
  */
-export class MockProvider implements AIProvider {
+export class MockText implements TextProvider {
   readonly name = "mock";
 
   async structured<T>(req: StructuredRequest<T>): Promise<StructuredResult<T>> {
@@ -21,10 +21,62 @@ export class MockProvider implements AIProvider {
     return { data: req.schema.parse(out), sources: [], model: "mock" };
   }
 
+  /**
+   * Agente de teste: entende pedidos simples de agenda ("agenda o vídeo da
+   * casa 12 para amanhã às 19h") chamando as mesmas ferramentas do Claude.
+   */
+  async agent(req: AgentRequest): Promise<AgentResult> {
+    const text = req.messages[req.messages.length - 1]?.text ?? "";
+    const calls: AgentToolCall[] = [];
+    const call = async (name: string, input: unknown) => {
+      const tool = req.tools.find((t) => t.name === name);
+      if (!tool) return null;
+      const parsed = tool.schema.parse(input);
+      try {
+        const output = await tool.run(parsed);
+        calls.push({ name, input: parsed, output });
+        return output as Record<string, unknown>;
+      } catch (err) {
+        calls.push({ name, input: parsed, output: null, error: (err as Error).message });
+        return null;
+      }
+    };
+    const pedido = text.replace(/^AGORA:.*\n/, "");
+    if (/agend|program|post|publica|coloc|bota|sobe/i.test(pedido)) {
+      const busca = pedido.match(/(casa|apto|apartamento|condom[ií]nio|obra|resultado|projeto)[^,.;]*/i)?.[0] ?? pedido;
+      const found = (await call("buscar_midias", { consulta: busca, etapa: null, tipo: null, limite: 5 })) as { midias?: Array<{ id: string; tipo: string }> } | null;
+      const media = found?.midias?.[0];
+      if (!media) return { text: "Não encontrei mídia para esse pedido. Diga a pasta e a etapa (Projeto, Obra ou Resultado).", toolCalls: calls, model: "mock" };
+      const hora = pedido.match(/(\d{1,2})\s*(?:h|:)(\d{2})?/);
+      const quando = new Date(Date.now() + 86400_000);
+      const dia = quando.toISOString().slice(0, 10);
+      const hh = String(hora ? Number(hora[1]) : 19).padStart(2, "0");
+      const mm = hora?.[2] ?? "00";
+      await call("criar_rascunho_post", {
+        midia_ids: [media.id], data_hora_local: `${dia}T${hh}:${mm}:00`, tipo: media.tipo === "video" ? "REEL" : "POST",
+        legenda: "Cada detalhe pensado para a sua rotina. Marcenaria planejada AlphaHome.",
+        hashtags: ["#moveisplanejados", "#marcenaria", "#altopadrao"], primeiro_comentario: null, redes: ["instagram"],
+      });
+      return { text: `Preparei o rascunho do post para ${dia} às ${hh}:${mm}. Confira e confirme no cartão.`, toolCalls: calls, model: "mock" };
+    }
+    if (/lista|quais|pr[oó]xim/i.test(pedido)) {
+      await call("listar_posts", { de: null, ate: null });
+      return { text: "Aqui estão os próximos posts.", toolCalls: calls, model: "mock" };
+    }
+    return { text: "Diga o que agendar, por exemplo: \"Agenda o vídeo da obra da Casa 12 para amanhã às 19h\".", toolCalls: calls, model: "mock" };
+  }
+}
+
+export class MockEmbeddings implements EmbeddingProvider {
+  readonly name = "mock";
+  readonly model = "mock-hash-256";
   async embed(texts: string[]): Promise<number[][]> {
     return texts.map(hashEmbedding);
   }
+}
 
+export class MockImages implements ImageProvider {
+  readonly name = "mock";
   async image(req: ImageRequest): Promise<ImageResult> {
     const [w, h] = req.size.split("x").map(Number);
     const title = (req.prompt.match(/TEXT ON IMAGE: "([^"]*)"/)?.[1] ?? "AlphaHome").slice(0, 60);
@@ -262,6 +314,16 @@ const BUILDERS: Record<string, (text: string, data: Record<string, unknown>) => 
   },
   resposta(text): Answer {
     return { resposta: `Resposta de teste para: ${text.split("\n").find((l) => l.startsWith("PERGUNTA:"))?.replace("PERGUNTA:", "").trim() ?? "sua pergunta"}` };
+  },
+  editorial(_t, data) {
+    const k = (data.kpis ?? {}) as Record<string, { atual: number | null; variacao_pct: number | null }>;
+    const seg = k.seguidores;
+    return {
+      manchete: seg?.variacao_pct != null ? `Seguidores ${seg.variacao_pct >= 0 ? "sobem" : "caem"} ${Math.abs(seg.variacao_pct).toFixed(1)}% no período` : "Edição sem dados suficientes",
+      linha_fina: "Resumo de teste gerado sem IA.",
+      materias: [{ titulo: "Como foi o período", texto: "Texto de teste. Ligue o Claude para o editorial real." }],
+      recomendacoes: ["Publicar mais vídeos de resultado final."],
+    };
   },
   licao_feedback(_t, data): FeedbackLesson {
     const comentario = String(data.comentario ?? "").trim();

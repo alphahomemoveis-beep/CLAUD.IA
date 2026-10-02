@@ -6,7 +6,7 @@ import { Modal } from "@/components/Modal";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const TABS = ["Configuração da marca", "Modelos de IA", "Usuários", "Atividades"] as const;
+const TABS = ["Configuração da marca", "Integrações", "Modelos de IA", "Usuários", "Minha conta", "Atividades"] as const;
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Configuração da marca");
@@ -21,7 +21,9 @@ export default function SettingsPage() {
       </div>
       <div className="tabs">{TABS.map((t) => <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t}</button>)}</div>
       {tab === "Configuração da marca" && <BrandTab />}
+      {tab === "Integrações" && <IntegrationsTab />}
       {tab === "Modelos de IA" && <ModelsTab />}
+      {tab === "Minha conta" && <AccountTab />}
       {tab === "Usuários" && <UsersTab />}
       {tab === "Atividades" && <ActivityTab />}
     </div>
@@ -209,7 +211,10 @@ function ModelsTab() {
     <div className="card stack" style={{ maxWidth: 820 }}>
       {node}
       <div className="alert alert-info small">
-        Provedor ativo: <strong>{eff.provider === "mock" ? "teste (sem custo, respostas simuladas)" : "OpenAI"}</strong>. A chave da API fica só no servidor, em variável de ambiente, e nunca chega ao navegador.
+        Cérebro do estúdio: <strong>{eff.provider === "anthropic" ? "Claude (Anthropic)" : eff.provider === "openai" ? "OpenAI" : "teste (sem custo, respostas simuladas)"}</strong>.
+        Imagens: <strong>{eff.imageProvider === "manual" ? "modo manual (você gera e envia a peça)" : eff.imageProvider === "openai" ? "OpenAI Image API" : "teste"}</strong>.
+        Busca de referências: <strong>{eff.embeddingProvider === "none" ? "texto completo no banco" : eff.embeddingProvider}</strong>.
+        As chaves ficam só no servidor e nunca chegam ao navegador.
         Deixe um campo vazio para usar o padrão do servidor.
       </div>
       <div className="grid-2">
@@ -267,7 +272,7 @@ function UsersTab() {
               <div><strong>{u.name}</strong> <span className="small muted">{u.email}</span><div className="tiny muted">Último acesso: {u.last_login_at ? fmtDate(u.last_login_at) : "nunca"}</div></div>
               <div className="row">
                 <select className="select" style={{ width: "auto" }} value={u.role} onChange={(e) => update(u.id, { role: e.target.value })}>
-                  <option value="owner">Dono</option><option value="editor">Editor</option><option value="viewer">Leitura</option>
+                  <option value="owner">Dono</option><option value="editor">Gerente</option><option value="viewer">Leitura</option>
                 </select>
                 <button className="btn btn-ghost btn-xs" onClick={() => update(u.id, { disabled: !u.disabled })}>{u.disabled ? "Reativar" : "Desativar"}</button>
               </div>
@@ -282,7 +287,7 @@ function UsersTab() {
           <label className="field"><span className="label">E-mail</span><input className="input" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
           <label className="field"><span className="label">Senha inicial</span><input className="input" type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /><span className="hint">Mínimo de 10 caracteres, com letras e números.</span></label>
           <label className="field"><span className="label">Papel</span>
-            <select className="select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}><option value="editor">Editor</option><option value="viewer">Leitura</option><option value="owner">Dono</option></select>
+            <select className="select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}><option value="editor">Gerente</option><option value="owner">Dono</option><option value="viewer">Leitura</option></select>
           </label>
         </div>
         <button className="btn btn-primary" style={{ marginTop: 14 }}>Criar usuário</button>
@@ -307,5 +312,88 @@ function ActivityTab() {
         </div>
       ))}
     </div>
+  );
+}
+
+function IntegrationsTab() {
+  const [d, setD] = useState<any>(null);
+  const [blogId, setBlogId] = useState("");
+  const [handle, setHandle] = useState("");
+  const { setMsg, node } = useMsg();
+  const load = (marcas = false) => api<any>(`/api/integrations/metricool${marcas ? "?marcas=1" : ""}`).then((r) => {
+    setD(r); setBlogId(r.status.integrations.metricool_blog_id ?? r.status.metricool.blogId ?? ""); setHandle(r.status.integrations.instagram_handle ?? "");
+  }).catch((e) => setMsg({ ok: false, text: e.message }));
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!d) return <span className="spinner" />;
+  const s = d.status;
+  const Row = ({ ok, title, children }: { ok: boolean; title: string; children: React.ReactNode }) => (
+    <div className="list-item"><div><strong>{ok ? "✓" : "○"} {title}</strong><div className="small muted">{children}</div></div>
+      <span className={`chip ${ok ? "chip-ok" : ""}`}>{ok ? "Conectado" : "Não conectado"}</span></div>
+  );
+  async function save() {
+    try {
+      await api("/api/brand", { method: "PUT", json: { integrations: { metricool_blog_id: blogId, instagram_handle: handle.replace(/^@/, "") } } });
+      setMsg({ ok: true, text: "Integrações salvas." });
+      load();
+    } catch (err) { setMsg({ ok: false, text: (err as Error).message }); }
+  }
+  return (
+    <div className="stack" style={{ maxWidth: 860 }}>
+      {node}
+      <div className="list">
+        <Row ok={s.ai.provider !== "mock" && s.ai.keySet} title={s.ai.provider === "anthropic" ? "Claude (Anthropic)" : s.ai.provider === "openai" ? "OpenAI" : "IA de teste"}>
+          Cérebro do estúdio, da agenda e do jornal. Variável: {s.ai.provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY"}.
+        </Row>
+        <Row ok={s.metricool.tokenSet && !!s.metricool.blogId} title="Metricool">
+          Agenda e publica os posts e traz concorrentes. Variáveis: METRICOOL_USER_TOKEN e METRICOOL_USER_ID. A marca (blogId) é escolhida abaixo.
+        </Row>
+        <Row ok={s.windsor.keySet} title="Windsor.ai">Seguidores, alcance e visitas do Instagram da marca para o jornal. Variável: WINDSOR_API_KEY.</Row>
+        <Row ok={!!s.publicMedia.appUrl && s.publicMedia.secretSet && !/localhost|127\.0\.0\.1/.test(s.publicMedia.appUrl)} title="Links de mídia para o Metricool">
+          O Metricool baixa os vídeos por links temporários assinados. Precisa de APP_URL público ({s.publicMedia.appUrl ?? "não definido"}) e APP_SECRET.
+        </Row>
+        <Row ok={s.cron.secretSet} title="Sincronização automática">Chame /api/cron/sync de hora em hora com o cabeçalho Authorization: Bearer CRON_SECRET.</Row>
+      </div>
+      <div className="card stack">
+        <h3>Metricool e Instagram</h3>
+        <div className="grid-2">
+          <label className="field"><span className="label">Marca do Metricool (blogId)</span>
+            {d.brands?.length
+              ? <select className="select" value={blogId} onChange={(e) => setBlogId(e.target.value)}>
+                  <option value="">Escolha</option>
+                  {d.brands.map((b: any) => <option key={b.blogId} value={b.blogId}>{b.label}{b.instagram ? ` (@${b.instagram})` : ""} · {b.blogId}</option>)}
+                </select>
+              : <input className="input" value={blogId} inputMode="numeric" onChange={(e) => setBlogId(e.target.value)} placeholder="Ex.: 1234567" />}
+            <span className="hint">{s.metricool.tokenSet ? <button type="button" className="btn btn-ghost btn-xs" style={{ paddingLeft: 0 }} onClick={() => load(true)}>Buscar minhas marcas no Metricool</button> : "Defina o token do Metricool no servidor para listar as marcas."}{d.brandsError ? ` ${d.brandsError}` : ""}</span>
+          </label>
+          <label className="field"><span className="label">@ do Instagram da marca</span><input className="input" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="alphahome.moveis" /></label>
+        </div>
+        <div className="small muted">Fuso horário da agenda: {s.timezone} (variável APP_TIMEZONE).</div>
+        <div><button className="btn btn-primary" onClick={save}>Salvar</button></div>
+      </div>
+    </div>
+  );
+}
+
+function AccountTab() {
+  const [f, setF] = useState({ current: "", next: "", confirm: "" });
+  const { setMsg, node } = useMsg();
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (f.next !== f.confirm) return setMsg({ ok: false, text: "As senhas novas não conferem." });
+    try {
+      await api("/api/auth/password", { method: "POST", json: { current: f.current, next: f.next } });
+      setF({ current: "", next: "", confirm: "" });
+      setMsg({ ok: true, text: "Senha trocada." });
+    } catch (err) { setMsg({ ok: false, text: (err as Error).message }); }
+  }
+  return (
+    <form className="card stack" style={{ maxWidth: 480 }} onSubmit={save}>
+      {node}
+      <h3>Trocar senha</h3>
+      <label className="field"><span className="label">Senha atual</span><input className="input" type="password" required autoComplete="current-password" value={f.current} onChange={(e) => setF({ ...f, current: e.target.value })} /></label>
+      <label className="field"><span className="label">Nova senha</span><input className="input" type="password" required autoComplete="new-password" value={f.next} onChange={(e) => setF({ ...f, next: e.target.value })} /><span className="hint">Mínimo de 10 caracteres, com letras e números.</span></label>
+      <label className="field"><span className="label">Repita a nova senha</span><input className="input" type="password" required autoComplete="new-password" value={f.confirm} onChange={(e) => setF({ ...f, confirm: e.target.value })} /></label>
+      <button className="btn btn-primary">Salvar</button>
+    </form>
   );
 }

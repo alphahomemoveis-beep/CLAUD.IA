@@ -14,6 +14,7 @@ interface Loaded {
   project: ChatProject | null;
   images: ChatImage[];
   plans: PlanStatus[];
+  imageMode?: string;
 }
 
 const EXAMPLES = [
@@ -97,7 +98,7 @@ export function ChatView({ initialId }: { initialId?: string }) {
 
   // Continua gerações pendentes ao abrir a conversa.
   useEffect(() => {
-    if (!data.project || !["aprovado", "gerado"].includes(data.project.stage)) return;
+    if (!data.project || !["aprovado", "gerado"].includes(data.project.stage) || data.imageMode === "manual") return;
     const pending = data.images.filter((i) => i.status === "pendente").map((i) => i.id);
     if (pending.length && !busy) generate(pending);
   }, [data.project?.stage, data.images.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -116,13 +117,13 @@ export function ChatView({ initialId }: { initialId?: string }) {
       if (action.type === "message") {
         setData((d) => ({ ...d, messages: [...d.messages, { id: "tmp", role: "user", kind: "text", content: action.text, payload: null, created_at: new Date().toISOString() }] }));
       }
-      const res = await api<{ messages: ChatMessage[]; project: ChatProject | null; images: ChatImage[]; plans: PlanStatus[] }>(
+      const res = await api<{ messages: ChatMessage[]; project: ChatProject | null; images: ChatImage[]; plans: PlanStatus[]; imageMode: string }>(
         `/api/conversations/${id}/actions`, { method: "POST", json: action });
       setData((d) => ({
         messages: [...d.messages.filter((m) => m.id !== "tmp"), ...res.messages],
-        project: res.project, images: res.images, plans: res.plans,
+        project: res.project, images: res.images, plans: res.plans, imageMode: res.imageMode,
       }));
-      const toGenerate = res.messages.filter((m) => m.kind === "generation").flatMap((m) => (m.payload?.imageIds as string[]) ?? []);
+      const toGenerate = res.imageMode === "manual" ? [] : res.messages.filter((m) => m.kind === "generation").flatMap((m) => (m.payload?.imageIds as string[]) ?? []);
       setBusy(null);
       window.dispatchEvent(new Event("alphahome:conversas"));
       if (toGenerate.length) generate(toGenerate);
@@ -255,13 +256,14 @@ export function ChatView({ initialId }: { initialId?: string }) {
                             key={id}
                             image={img}
                             tall={tall}
+                            manual={data.imageMode === "manual"}
                             canGenerate={stage === "aprovado" || stage === "gerado"}
                             onGenerate={(gid) => generate([gid])}
                             onNotice={setToast}
                             onUpdated={(updated, extra) => {
                               setImage({ ...img, ...updated });
                               if (extra?.lessons?.length) setToast(`Aprendizado guardado: ${extra.lessons.map((l) => l.rule).join(" · ")}`);
-                              if (extra?.revision && conversationId) load(conversationId).then(() => generate([extra.revision!.id]));
+                              if (extra?.revision && conversationId) load(conversationId).then((d) => { if (d.imageMode !== "manual") generate([extra.revision!.id]); });
                             }}
                           />
                         );

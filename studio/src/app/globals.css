@@ -352,3 +352,60 @@ button.chip:hover { border-color: var(--line-2); }
   .list-item { flex-wrap: wrap; }
   .list-item > * { flex-shrink: 1 !important; }
 }
+
+/* Agenda ---------------------------------------------------------------------- */
+.agenda-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.agenda-grid > * { min-width: 0; }
+.agenda-grid select { min-width: 0; flex: 1 1 auto; }
+.video-badge { position: absolute; left: 6px; bottom: 6px; background: rgba(27, 23, 20, 0.72); color: #f6f2ec; font-size: 11px; padding: 2px 7px; border-radius: 999px; pointer-events: none; }
+.agenda-tabs { display: none; }
+@media (max-width: 980px) {
+  .agenda-grid { grid-template-columns: 1fr; }
+  .agenda-tabs { display: flex; }
+  .agenda-hide { display: none; }
+}
+
+/* Jornal ----------------------------------------------------------------------- */
+.journal { max-width: 1120px; }
+.masthead { text-align: center; margin-bottom: 8px; }
+.paper-name { font-family: var(--font-display); font-size: 58px; line-height: 1.05; font-weight: 600; letter-spacing: -0.01em; margin-top: 6px; }
+.lead-story { text-align: center; padding: 26px 0 22px; border-bottom: 1px solid var(--line-2); margin-bottom: 22px; }
+.lead-story .row { justify-content: center; }
+.headline { font-size: 44px; line-height: 1.1; max-width: 900px; margin: 0 auto; }
+.standfirst { font-family: var(--font-display); font-style: italic; font-size: 21px; color: var(--ink-2); max-width: 760px; margin: 10px auto 8px; }
+.kpi-grid { margin-bottom: 22px; }
+.delta { display: inline-flex; align-items: baseline; gap: 4px; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+.delta-up { color: var(--ok); }
+.delta-down { color: var(--bad); }
+.delta-flat, .delta-none { color: var(--muted); font-weight: 500; }
+.delta-abs { font-weight: 500; color: var(--ink-2); font-size: 12px; }
+.journal-cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.chart-tip { position: absolute; top: 4px; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 10px; font-size: 13px; pointer-events: none; white-space: nowrap; box-shadow: var(--shadow); }
+.ranking { list-style: none; margin: 0; padding: 0; }
+.ranking li { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; grid-template-areas: "pos who num" "pos who grow"; gap: 0 10px; padding: 10px 6px; border-bottom: 1px solid var(--line); align-items: center; }
+.ranking li.own { background: var(--accent-soft); border-radius: 8px; }
+.ranking .pos { grid-area: pos; font-size: 18px; text-align: center; color: var(--ink-2); font-weight: 600; }
+.ranking .who { grid-area: who; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranking .num { grid-area: num; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ranking .grow { grid-area: grow; text-align: right; font-size: 12px; }
+.ranking .grow .delta { font-size: 12px; }
+.articles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 26px; border-top: 3px double var(--ink); }
+.articles article { padding: 16px 18px 0; border-right: 1px solid var(--line-2); }
+.articles article:last-child { border-right: 0; }
+.articles h3 { font-size: 22px; margin-bottom: 8px; }
+.articles p { margin: 0 0 10px; font-size: 14.5px; text-align: justify; hyphens: auto; }
+.articles .reco ul { margin: 0; padding-left: 18px; font-size: 14.5px; }
+.articles .reco li { margin-bottom: 6px; }
+@media (max-width: 980px) {
+  .journal-cols { grid-template-columns: 1fr; }
+  .articles { grid-template-columns: 1fr; }
+  .articles article { border-right: 0; border-bottom: 1px solid var(--line-2); padding-bottom: 8px; }
+}
+@media (max-width: 820px) {
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kpi-grid .stat { padding: 14px; }
+  .kpi-grid .n { font-size: 30px; }
+  .paper-name { font-size: 38px; }
+  .headline { font-size: 30px; }
+  .standfirst { font-size: 18px; }
+}

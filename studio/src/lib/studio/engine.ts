@@ -1,5 +1,5 @@
 import "server-only";
-import { ai } from "../ai";
+import { images, text as llm } from "../ai";
 import {
   AnswerSchema, BriefingSchema, ConceptSetSchema, FinalPromptsSchema, PlanSchema, ReplyIntentSchema, ResearchSchema,
   type Briefing, type ChecklistItem, type ConceptData, type PlanData,
@@ -125,7 +125,7 @@ async function routeMessage(ctx: Ctx, project: Project | null, text: string): Pr
 async function startProject(ctx: Ctx, text: string): Promise<Message[]> {
   const memory = await buildBrandMemory(ctx.brand, null);
   const history = await chatHistory(ctx.conversationId);
-  const { data: briefing } = await ai().structured({
+  const { data: briefing } = await llm().structured({
     schemaName: "briefing",
     schema: BriefingSchema,
     model: ctx.cfg.textModel,
@@ -169,7 +169,7 @@ export async function runResearch(ctx: Ctx, briefing: Briefing): Promise<NonNull
   if (!ctx.cfg.webSearch) return empty("Pesquisa de mercado desligada nas configurações. Os conceitos usam só a memória da marca.");
   try {
     const today = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    const { data, sources } = await ai().structured({
+    const { data, sources } = await llm().structured({
       schemaName: "pesquisa",
       schema: ResearchSchema,
       model: ctx.cfg.textModel,
@@ -183,7 +183,7 @@ Regras:
 - Se não encontrar nada recente, deixe tendencias_atuais vazia e diga isso no resumo.`,
       messages: [{ role: "user", text: `Pesquise para este briefing:\n${dataBlock({ tipo: briefing.tipo, tema: briefing.tema, ambiente: briefing.ambiente, temas: briefing.temas_pesquisa })}` }],
     });
-    return { ...enforceResearchHonesty(data, sources), fontes: sources, pesquisado_em, disponivel: ctx.cfg.provider !== "mock" };
+    return { ...enforceResearchHonesty(data, sources), fontes: sources, pesquisado_em, disponivel: ctx.cfg.provider !== "mock" && sources.length > 0 };
   } catch (err) {
     log.warn("pesquisa_falhou", { err });
     return empty("A pesquisa na web falhou agora. Os conceitos usam só a memória da marca, sem tendências atuais.");
@@ -225,13 +225,13 @@ ${project.research?.disponivel ? "Use as tendências atuais da pesquisa quando a
   };
   const prompt = `${notes ? `A pessoa pediu novos conceitos com este ajuste: ${notes}\n` : ""}Crie os conceitos.\n${dataBlock(input)}`;
 
-  let set = (await ai().structured({ schemaName: "conceitos", schema: ConceptSetSchema, model: ctx.cfg.textModel, system, messages: [{ role: "user", text: prompt }] })).data;
+  let set = (await llm().structured({ schemaName: "conceitos", schema: ConceptSetSchema, model: ctx.cfg.textModel, system, messages: [{ role: "user", text: prompt }] })).data;
 
   // Regra de um ambiente por arte, verificada no código.
   const mixed = set.conceitos.filter((c) => !project.multi_environment && mixesEnvironments(c.ambiente));
   if (mixed.length) {
     log.info("conceito_com_varios_ambientes", { project: project.id, conceitos: mixed.map((c) => c.numero) });
-    set = (await ai().structured({
+    set = (await llm().structured({
       schemaName: "conceitos", schema: ConceptSetSchema, model: ctx.cfg.textModel, system,
       messages: [{ role: "user", text: `${prompt}\n\nATENÇÃO: os conceitos ${mixed.map((c) => c.numero).join(", ")} misturaram ambientes. Refaça com UM ambiente principal por conceito.` }],
     })).data;
@@ -307,11 +307,11 @@ Em referencias_utilizadas use só IDs da lista acima e diga o que absorver sem c
     ajustes: notes,
   };
   const request = `${notes ? `Revise o planejamento com este pedido: ${notes}\n` : ""}${dataBlock(input)}`;
-  let plan = (await ai().structured({ schemaName: "planejamento", schema: PlanSchema, model: ctx.cfg.textModel, system, messages: [{ role: "user", text: request }] })).data;
+  let plan = (await llm().structured({ schemaName: "planejamento", schema: PlanSchema, model: ctx.cfg.textModel, system, messages: [{ role: "user", text: request }] })).data;
 
   const problems = planProblems(plan, tipo, project.multi_environment);
   if (problems.length) {
-    plan = (await ai().structured({
+    plan = (await llm().structured({
       schemaName: "planejamento", schema: PlanSchema, model: ctx.cfg.textModel, system,
       messages: [{ role: "user", text: `${request}\n\nCorrija estes problemas: ${problems.join(" ")}` }],
     })).data;
@@ -405,7 +405,12 @@ async function approvePlan(ctx: Ctx, project: Project, planId: string): Promise<
   msgs.push(await addMessage(ctx.conversationId, "assistant", "quality",
     `Planejamento aprovado. Escrevi o prompt final e rodei o checklist de qualidade${review.attempts > 1 ? `, revisando o prompt ${review.attempts - 1} vez(es)` : ""}.`,
     { review, pieces: pieces.map((p) => ({ numero: p.numero, checklist: p.checklist })) }));
-  msgs.push(await addMessage(ctx.conversationId, "assistant", "generation", `Gerando ${label} (v${pad(version)}).`, { version, imageIds }));
+  const manual = !images();
+  msgs.push(await addMessage(ctx.conversationId, "assistant", "generation",
+    manual
+      ? `Prompt final pronto para ${label} (v${pad(version)}). Copie o prompt, gere a imagem e envie a peça pronta em cada cartão.`
+      : `Gerando ${label} (v${pad(version)}).`,
+    { version, imageIds }));
   return msgs;
 }
 
@@ -436,7 +441,7 @@ Escreva o prompt final de cada peça para o modelo de geração de imagem.
   let pieces: FinalPiece[] = [];
   let attempts = 0;
   for (; attempts <= MAX_QUALITY_REVISIONS; attempts++) {
-    const { data } = await ai().structured({ schemaName: "prompts_finais", schema: FinalPromptsSchema, model: ctx.cfg.textModel, system, messages });
+    const { data } = await llm().structured({ schemaName: "prompts_finais", schema: FinalPromptsSchema, model: ctx.cfg.textModel, system, messages });
     pieces = data.pecas;
     const failed = pieces.flatMap((p) => p.checklist.filter((c) => !c.aprovado).map((c) => `peça ${p.numero}: ${c.item} (${c.observacao})`));
     const envIssues = project.multi_environment ? [] : pieces.filter((p) => mixesEnvironments(p.prompt_final.replace(/"[^"]*"/g, ""))).map((p) => `peça ${p.numero}: ambiente (o prompt descreve mais de um ambiente)`);
@@ -457,7 +462,7 @@ Escreva o prompt final de cada peça para o modelo de geração de imagem.
 
 // Respostas e utilidades ---------------------------------------------------------
 async function interpretReply(ctx: Ctx, project: Project, text: string) {
-  const { data } = await ai().structured({
+  const { data } = await llm().structured({
     schemaName: "intencao",
     schema: ReplyIntentSchema,
     model: ctx.cfg.textModel,
@@ -475,7 +480,7 @@ async function interpretReply(ctx: Ctx, project: Project, text: string) {
 async function answer(ctx: Ctx, project: Project, text: string) {
   const memory = await buildBrandMemory(ctx.brand, project.id);
   const history = await chatHistory(ctx.conversationId);
-  const { data } = await ai().structured({
+  const { data } = await llm().structured({
     schemaName: "resposta", schema: AnswerSchema, model: ctx.cfg.textModel,
     system: `${memory}\n\n## TAREFA\nResponda à pergunta da pessoa sobre o projeto "${project.title}". Etapa: ${project.stage}. Não gere imagens.`,
     messages: [...history, { role: "user", text: `PERGUNTA: ${text}` }],

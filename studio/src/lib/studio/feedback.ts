@@ -1,5 +1,5 @@
 import "server-only";
-import { ai } from "../ai";
+import { text as llm } from "../ai";
 import { FeedbackLessonSchema, RevisedPromptSchema } from "../ai/schemas";
 import { query, queryOne, tx } from "../db";
 import { effectiveAI, getBrand } from "../repo/brand";
@@ -59,7 +59,7 @@ export async function giveFeedback(userId: string, input: FeedbackInput): Promis
   const lessons: FeedbackResult["lessons"] = [];
   if (comment && input.learn !== false && (input.kind === "rejeitar" || input.kind === "alterar" || input.kind === "aprovar")) {
     try {
-      const { data } = await ai().structured({
+      const { data } = await llm().structured({
         schemaName: "licao_feedback",
         schema: FeedbackLessonSchema,
         model: cfg.textModel,
@@ -102,7 +102,7 @@ async function createRevision(project: Project, image: ImageRow, request: string
   if (!plan.approved) throw new WorkflowError("Regra absoluta: a peça só é alterada sobre um planejamento aprovado.");
   const memory = await buildBrandMemory(brand, project.id);
   const piece = plan.data.pecas.find((p) => p.numero === image.slide_number);
-  const { data } = await ai().structured({
+  const { data } = await llm().structured({
     schemaName: "revisao_peca",
     schema: RevisedPromptSchema,
     model,

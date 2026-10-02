@@ -36,7 +36,13 @@ const AISettings = z.object({
   max_references: z.number().int().min(2).max(12).optional(),
 });
 
+const Integrations = z.object({
+  metricool_blog_id: z.string().regex(/^[0-9]{1,20}$/, "blogId do Metricool tem só números").or(z.literal("")).optional(),
+  instagram_handle: z.string().max(60).optional(),
+});
+
 const Body = z.object({
+  integrations: Integrations.optional(),
   name: z.string().min(1).max(80).optional(),
   positioning: z.string().max(200).optional(),
   identity: Identity.optional(),
@@ -51,6 +57,7 @@ export const PUT = route(async ({ req, user }) => {
     positioning: body.positioning,
     identity: body.identity ? { ...brand.identity, ...body.identity } : undefined,
     ai_settings: body.ai_settings ? { ...brand.ai_settings, ...body.ai_settings } : undefined,
+    integrations: body.integrations ? { ...brand.integrations, ...body.integrations } : undefined,
   });
   await logActivity(user.id, "marca_atualizada", "brand_settings", brand.id, { campos: Object.keys(body) });
   const { logo_file_key, ...rest } = updated;

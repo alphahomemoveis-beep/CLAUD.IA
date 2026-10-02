@@ -9,6 +9,9 @@ const NAV = [
   { href: "/", label: "Novo projeto", icon: "✨" },
   { href: "/conversas", label: "Conversas", icon: "💬" },
   { href: "/projetos", label: "Projetos", icon: "📁" },
+  { href: "/pastas", label: "Pastas de obras", icon: "🗂️" },
+  { href: "/agenda", label: "Agenda de posts", icon: "📅" },
+  { href: "/jornal", label: "Jornal", icon: "📰" },
   { href: "/biblioteca", label: "Biblioteca visual", icon: "🖼️" },
   { href: "/memoria", label: "Memória da marca", icon: "🧠" },
   { href: "/identidade", label: "Identidade", icon: "🎨" },
@@ -77,7 +80,7 @@ export function Sidebar({ user }: Props) {
         <div className="side-foot">
           <div>{user.name}</div>
           <div className="spread" style={{ color: "var(--side-muted)", fontSize: 12 }}>
-            <span>{user.role === "owner" ? "Dono" : user.role === "editor" ? "Editor" : "Leitura"}</span>
+            <span>{user.role === "owner" ? "Dono" : user.role === "editor" ? "Gerente" : "Leitura"}</span>
             <button onClick={logout}>Sair</button>
           </div>
         </div>

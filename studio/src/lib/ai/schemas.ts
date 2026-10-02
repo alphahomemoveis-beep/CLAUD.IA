@@ -198,3 +198,12 @@ export type RevisedPrompt = z.infer<typeof RevisedPromptSchema>;
 // 10. Resposta livre (perguntas no meio do fluxo) ----------------------------------
 export const AnswerSchema = z.object({ resposta: z.string() });
 export type Answer = z.infer<typeof AnswerSchema>;
+
+// 11. Jornal: editorial escrito a partir dos números calculados -------------------
+export const EditorialSchema = z.object({
+  manchete: z.string().describe("Manchete curta com o fato mais importante do período"),
+  linha_fina: z.string().describe("Uma frase de apoio abaixo da manchete"),
+  materias: z.array(z.object({ titulo: z.string(), texto: z.string().describe("Dois ou três parágrafos curtos") })).min(1).max(4),
+  recomendacoes: z.array(z.string()).describe("De 2 a 4 ações concretas para o próximo período"),
+});
+export type Editorial = z.infer<typeof EditorialSchema>;

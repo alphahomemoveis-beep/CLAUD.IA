@@ -8,6 +8,7 @@ import { checkRate, resetRateLimits } from "@/lib/rate-limit";
 import { toStrictJsonSchema } from "@/lib/ai/json-schema";
 import { ConceptSetSchema, PlanSchema, type PlanData } from "@/lib/ai/schemas";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { toTsQuery } from "@/lib/studio/tsquery";
 
 describe("regra absoluta: nunca gerar antes da escolha e da aprovação", () => {
   it("bloqueia geração sem conceito escolhido", () => {
@@ -136,5 +137,13 @@ describe("senhas", () => {
     expect(h.startsWith("scrypt$")).toBe(true);
     expect(await verifyPassword("senhaForte123", h)).toBe(true);
     expect(await verifyPassword("errada", h)).toBe(false);
+  });
+});
+
+describe("busca de texto completo", () => {
+  it("monta consulta só com palavras, sem a sintaxe digitada", () => {
+    expect(toTsQuery("Cozinha com LED & madeira | freijó!")).toBe("cozinha | com | led | madeira | freijo");
+    expect(toTsQuery("'); DROP TABLE x; --")).toBe("drop | table");
+    expect(toTsQuery("a b")).toBeNull();
   });
 });

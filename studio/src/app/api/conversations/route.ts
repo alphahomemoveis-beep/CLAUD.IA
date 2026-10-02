@@ -11,7 +11,7 @@ export const GET = route(async ({ req }) => {
             p.id AS project_id, p.content_type, p.stage, p.status, p.current_version,
             (SELECT content FROM messages m WHERE m.conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message
        FROM conversations c LEFT JOIN creative_projects p ON p.conversation_id = c.id
-      WHERE c.brand_id = $1 AND c.archived = $2
+      WHERE c.brand_id = $1 AND c.archived = $2 AND c.kind = 'estudio'
         AND EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = c.id)
       ORDER BY c.updated_at DESC LIMIT 200`,
     [brand.id, archived],

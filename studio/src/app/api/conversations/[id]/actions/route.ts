@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { json, route } from "@/lib/api";
 import { notFound } from "@/lib/errors";
-import { getBrand } from "@/lib/repo/brand";
+import { effectiveAI, getBrand } from "@/lib/repo/brand";
 import { getConversation, getProjectByConversation } from "@/lib/repo/projects";
 import { handleAction } from "@/lib/studio/engine";
 import { loadImagesForMessages, loadPlanStatus } from "@/lib/studio/views";
@@ -24,5 +24,5 @@ export const POST = route<{ id: string }>(async ({ params, req, user }) => {
   const messages = await handleAction(user.id, conversation.id, action);
   const project = await getProjectByConversation(conversation.id);
   const [images, plans] = project ? await Promise.all([loadImagesForMessages(project.id), loadPlanStatus(project.id)]) : [[], []];
-  return json({ messages, project, images, plans });
+  return json({ messages, project, images, plans, imageMode: effectiveAI(brand).imageProvider });
 }, { role: "editor", rate: "ai" });
