@@ -24,10 +24,15 @@ Tenha à mão:
 - Um cartão para os planos pagos (Railway, créditos da Anthropic, plano do Metricool com API).
 - Um gerenciador de senhas para gerar textos aleatórios longos.
 
-## Passo 1. Levar o código para o branch principal
+## Passo 1. Levar o código para o branch padrão
 
-O app está no branch `claude/alphahome-creative-studio-ekgn8w`. Abra um pull request desse branch para o `main`
-no GitHub e faça o merge. A Railway vai publicar o `main`.
+O app está no branch `claude/alphahome-creative-studio-ekgn8w`. O branch padrão do repositório é
+`claude/metricool-windsor-connection-oqdxfr` (não existe `main`). Abra o pull request por este link e faça o merge:
+
+https://github.com/alphahomemoveis-beep/CLAUD.IA/compare/claude/metricool-windsor-connection-oqdxfr...claude/alphahome-creative-studio-ekgn8w?expand=1
+
+Depois, na Railway, escolha o branch padrão para publicar. Se preferir pular o pull request, escolha direto o
+branch `claude/alphahome-creative-studio-ekgn8w` na Railway.
 
 ## Passo 2. Banco de dados no Supabase
 
