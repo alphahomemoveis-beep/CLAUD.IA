@@ -8,7 +8,9 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL é obrigatória"),
 
   // Cérebro do estúdio: texto, visão, pesquisa e conversa da agenda.
-  AI_PROVIDER: z.enum(["anthropic", "openai", "mock"]).default("anthropic"),
+  // "none" = IA desligada: o app liga e o que não depende de IA funciona.
+  // Sem AI_PROVIDER definido, usa o Claude se houver chave; senão, desligada.
+  AI_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["anthropic", "openai", "mock", "none"]).optional()),
   ANTHROPIC_API_KEY: optional,
   OPENAI_API_KEY: optional,
   AI_TEXT_MODEL: optional,
@@ -45,7 +47,7 @@ const schema = z.object({
   WINDSOR_API_KEY: optional,
 });
 
-export type ServerEnv = z.infer<typeof schema>;
+export type ServerEnv = Omit<z.infer<typeof schema>, "AI_PROVIDER"> & { AI_PROVIDER: "anthropic" | "openai" | "mock" | "none" };
 
 let cached: ServerEnv | null = null;
 
@@ -57,7 +59,7 @@ export function env(): ServerEnv {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Configuração inválida: ${issues}`);
   }
-  const e = parsed.data;
+  const e = { ...parsed.data, AI_PROVIDER: parsed.data.AI_PROVIDER ?? (parsed.data.ANTHROPIC_API_KEY ? "anthropic" : "none") } as const;
   const need = (cond: boolean, msg: string) => { if (cond) throw new Error(msg); };
   need(e.AI_PROVIDER === "anthropic" && !e.ANTHROPIC_API_KEY, "ANTHROPIC_API_KEY é obrigatória quando AI_PROVIDER=anthropic");
   need(e.AI_PROVIDER === "openai" && !e.OPENAI_API_KEY, "OPENAI_API_KEY é obrigatória quando AI_PROVIDER=openai");
@@ -73,7 +75,7 @@ export function env(): ServerEnv {
 
 /** Modelos padrão de cada provedor de texto. */
 export function defaultTextModel(provider: ServerEnv["AI_PROVIDER"]) {
-  return provider === "anthropic" ? "claude-opus-5-5" : provider === "openai" ? "gpt-5.5" : "mock";
+  return provider === "anthropic" ? "claude-opus-5-5" : provider === "openai" ? "gpt-5.5" : provider === "none" ? "desligada" : "mock";
 }
 
 export function defaultEmbeddingModel(provider: ServerEnv["EMBEDDING_PROVIDER"]) {

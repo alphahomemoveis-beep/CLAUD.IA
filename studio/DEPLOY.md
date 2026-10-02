@@ -47,11 +47,18 @@ branch `claude/alphahome-creative-studio-ekgn8w` na Railway.
 
 Não é preciso rodar nada no banco: o app cria as tabelas sozinho ao iniciar.
 
-## Passo 3. Chave do Claude
+## Passo 3. Chave do Claude (opcional)
+
+Sem a chave, o app liga com a **IA desligada**: login, pastas, agenda com posts feitos à mão, jornal e widget
+funcionam. O estúdio criativo, a agenda por conversa, a análise da biblioteca e o editorial do jornal ficam
+desligados, e dá para usar o Claude no chat para essas tarefas.
+
+Para ligar a IA do app:
 
 1. Entre no console da Anthropic (platform.claude.com) e crie uma chave em **API Keys**.
-2. Adicione créditos em **Billing**.
-3. A chave começa com `sk-ant-`. Este é o `ANTHROPIC_API_KEY`.
+2. Adicione créditos em **Billing** e, se quiser, um limite mensal em **Limits**.
+3. Na Railway, cadastre `ANTHROPIC_API_KEY` com a chave. Para gastar menos, cadastre também
+   `AI_TEXT_MODEL` = `claude-haiku-4-5`.
 
 ## Passo 4. App na Railway
 
@@ -72,8 +79,7 @@ Não é preciso rodar nada no banco: o app cria as tabelas sozinho ao iniciar.
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | a string do Session pooler (passo 2) |
 | `DATABASE_CA_CERT` | o conteúdo do certificado (passo 2) |
-| `AI_PROVIDER` | `anthropic` |
-| `ANTHROPIC_API_KEY` | a chave do passo 3 |
+| `ANTHROPIC_API_KEY` | só se for usar a IA do app (passo 3) |
 | `IMAGE_PROVIDER` | `manual` |
 | `EMBEDDING_PROVIDER` | `none` |
 | `STORAGE_DRIVER` | `local` |
@@ -140,7 +146,8 @@ Não é preciso rodar nada no banco: o app cria as tabelas sozinho ao iniciar.
 |---|---|
 | Deploy falha com "unable to verify the first certificate" | `DATABASE_CA_CERT` incompleto ou ausente |
 | Deploy falha com "password authentication failed" | senha errada no `DATABASE_URL` |
-| "ANTHROPIC_API_KEY é obrigatória" | variável não cadastrada na Railway |
+| "ANTHROPIC_API_KEY é obrigatória" | `AI_PROVIDER` está como `anthropic` sem a chave; apague `AI_PROVIDER` |
+| "A IA do aplicativo está desligada" | é o esperado sem chave; cadastre `ANTHROPIC_API_KEY` para ligar |
 | Login volta sempre para a tela de entrada | app aberto por `http://`; use o endereço `https://` |
 | "Origem da requisição não permitida" | `APP_URL` diferente do endereço usado no navegador |
 | Post falha com mensagem de mídia | `APP_URL` ou `APP_SECRET` ausentes |

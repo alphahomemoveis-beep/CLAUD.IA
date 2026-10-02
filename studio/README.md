@@ -20,6 +20,8 @@ O cérebro do estúdio é o **Claude** (Anthropic). Além do estúdio criativo, 
 - **📰 Jornal:** seguidores, alcance, visualizações, visitas e interações com setas de alta e queda contra o período
   anterior, ranking de seguidores com concorrentes e um editorial escrito pelo Claude só com os números calculados.
 - **Login:** primeiro acesso em `/primeiro-acesso`, papéis Dono, Gerente e Leitura, troca de senha.
+- **IA opcional:** sem `ANTHROPIC_API_KEY`, o app liga com a IA desligada. Pastas, agenda com posts feitos à
+  mão, jornal e widget continuam funcionando.
 
 > A IA propõe. Você escolhe. A IA executa. Nunca inverter essa ordem.
 
