@@ -4,7 +4,23 @@ import { AnthropicProvider } from "./anthropic-provider";
 import { MockEmbeddings, MockImages, MockText } from "./mock-provider";
 import { OpenAIEmbeddings, OpenAIImages, OpenAIText } from "./openai-provider";
 import { VoyageEmbeddings } from "./voyage-embeddings";
-import type { EmbeddingProvider, ImageProvider, TextProvider } from "./types";
+import { AIError, type EmbeddingProvider, type ImageProvider, type TextProvider } from "./types";
+
+export const AI_OFF_MESSAGE =
+  "A IA do aplicativo está desligada (sem chave da Anthropic). Pastas, agenda manual, jornal e widget continuam funcionando. Para criar com IA, peça ao Claude no chat ou cadastre ANTHROPIC_API_KEY na Railway.";
+
+/** IA desligada: qualquer pedido de IA responde com uma mensagem clara. */
+class DisabledText implements TextProvider {
+  readonly name = "none";
+  async structured(): Promise<never> {
+    throw new AIError(AI_OFF_MESSAGE, "indisponivel");
+  }
+  async agent(): Promise<never> {
+    throw new AIError(AI_OFF_MESSAGE, "indisponivel");
+  }
+}
+
+export const aiEnabled = () => env().AI_PROVIDER !== "none";
 
 let textP: TextProvider | null = null;
 let imageP: ImageProvider | null | undefined;
@@ -15,7 +31,8 @@ export function text(): TextProvider {
   if (textP) return textP;
   const e = env();
   textP = e.AI_PROVIDER === "anthropic" ? new AnthropicProvider(e.ANTHROPIC_API_KEY!)
-    : e.AI_PROVIDER === "openai" ? new OpenAIText(e.OPENAI_API_KEY!) : new MockText();
+    : e.AI_PROVIDER === "openai" ? new OpenAIText(e.OPENAI_API_KEY!)
+    : e.AI_PROVIDER === "none" ? new DisabledText() : new MockText();
   return textP;
 }
 

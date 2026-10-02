@@ -46,7 +46,7 @@ export function ChatView({ initialId }: { initialId?: string }) {
   const [busy, setBusy] = useState<{ steps: string[]; at: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [memory, setMemory] = useState<{ prompts: Array<{ title: string; version: number }>; preferences: number; references: { aprovadas: number } } | null>(null);
+  const [memory, setMemory] = useState<{ prompts: Array<{ title: string; version: number }>; preferences: number; references: { aprovadas: number }; ai?: { provider: string } } | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const generating = useRef(new Set<string>());
 
@@ -174,7 +174,12 @@ export function ChatView({ initialId }: { initialId?: string }) {
             Descreva a ideia. O estúdio entende a marca, pesquisa, consulta as referências e propõe conceitos. Você escolhe e aprova. Só então a IA executa.
           </p>
           {error && <div className="alert" style={{ marginTop: 16 }}>{error}</div>}
-          {composer}
+          {memory?.ai?.provider === "none" ? (
+            <div className="alert alert-info" style={{ marginTop: 24, maxWidth: 720, textAlign: "left" }}>
+              A IA do aplicativo está desligada, então o estúdio criativo não gera conceitos aqui. Use o Claude no chat para criar e
+              guarde as fotos em 🗂️ Pastas. Pastas, Agenda, Jornal e o widget funcionam normalmente.
+            </div>
+          ) : composer}
           <div className="examples">
             {EXAMPLES.map((e) => <button key={e} className="chip" onClick={() => setText(e)}>{e}</button>)}
           </div>

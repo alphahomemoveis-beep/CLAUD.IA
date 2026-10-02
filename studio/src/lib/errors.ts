@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { log } from "./logger";
+import { AIError } from "./ai/types";
 
 export class AppError extends Error {
   constructor(public status: number, message: string, public code = "erro") {
@@ -18,6 +19,10 @@ export const conflict = (msg: string) => new AppError(409, msg, "conflito");
 export function errorResponse(err: unknown): NextResponse {
   if (err instanceof AppError) {
     return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
+  }
+  if (err instanceof AIError) {
+    const status = err.kind === "indisponivel" ? 503 : err.kind === "recusa" ? 422 : 502;
+    return NextResponse.json({ error: err.message, code: `ia_${err.kind}` }, { status });
   }
   if (err instanceof ZodError) {
     const detail = err.issues.map((i) => `${i.path.join(".") || "campo"}: ${i.message}`).join("; ");

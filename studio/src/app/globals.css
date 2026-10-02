@@ -434,3 +434,4 @@ button.chip:hover { border-color: var(--line-2); }
 .widget-page .ig-widget { margin: 0; }
 .widget-page .ig-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .widget-page .ig-main, .widget-page .spark { grid-column: span 2; }
+.post-card .chip { white-space: normal; }

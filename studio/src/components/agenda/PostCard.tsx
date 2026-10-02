@@ -49,7 +49,7 @@ export function PostCard({ post, canAct, onChange, onNotice, compact }: Props) {
   const past = new Date(post.scheduled_at).getTime() < Date.now();
 
   return (
-    <div className="card" style={{ padding: 14, opacity: post.status === "cancelado" ? 0.6 : 1 }}>
+    <div className="card post-card" style={{ padding: 14, opacity: post.status === "cancelado" ? 0.6 : 1 }}>
       <div style={{ display: "grid", gridTemplateColumns: compact ? "72px 1fr" : "96px 1fr", gap: 14 }}>
         <div style={{ borderRadius: 10, overflow: "hidden", background: "var(--surface-3)", aspectRatio: post.post_type === "REEL" || post.post_type === "STORY" ? "9 / 16" : "4 / 5", position: "relative" }}>
           {cover && (cover.tipo === "video"

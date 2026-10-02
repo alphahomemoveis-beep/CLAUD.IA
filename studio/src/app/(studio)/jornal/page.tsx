@@ -14,6 +14,7 @@ interface Journal {
   profiles: Array<{ id: string; handle: string; display_name: string; is_own: boolean }>;
   posts: Record<string, number>; upcoming: number;
   sources: Record<"windsor" | "metricool", { configured: boolean; last: { ok: boolean; message: string; created_at: string } | null }>;
+  aiEnabled?: boolean;
   edition: { editorial: { manchete: string; linha_fina: string; materias: Array<{ titulo: string; texto: string }>; recomendacoes: string[] }; created_at: string } | null;
 }
 
@@ -167,11 +168,11 @@ export default function JournalPage() {
         ) : (
           <>
             <h1 className="headline">{j.kpis.seguidores.atual != null ? `${nf(j.kpis.seguidores.atual)} seguidores${j.kpis.seguidores.variacao_pct != null ? `, ${pct(j.kpis.seguidores.variacao_pct)} no período` : ""}` : "Sua primeira edição está a uma sincronização de distância"}</h1>
-            <p className="standfirst">Gere o editorial para a IA transformar os números em manchetes e recomendações.</p>
+            <p className="standfirst">{j.aiEnabled === false ? "Os números abaixo são calculados direto das fontes. O editorial com IA está desligado." : "Gere o editorial para a IA transformar os números em manchetes e recomendações."}</p>
           </>
         )}
         <div className="row" style={{ marginTop: 12 }}>
-          <button className="btn btn-primary" disabled={!!busy} onClick={writeEdition}>{busy === "edit" ? <span className="spinner" /> : e ? "Reescrever editorial" : "Gerar editorial"}</button>
+          {j.aiEnabled !== false && <button className="btn btn-primary" disabled={!!busy} onClick={writeEdition}>{busy === "edit" ? <span className="spinner" /> : e ? "Reescrever editorial" : "Gerar editorial"}</button>}
           <button className="btn" disabled={!!busy} onClick={sync}>{busy === "sync" ? <span className="spinner" /> : "Sincronizar agora"}</button>
         </div>
       </section>

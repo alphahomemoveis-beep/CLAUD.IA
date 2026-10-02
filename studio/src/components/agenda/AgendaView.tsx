@@ -7,6 +7,7 @@ import { MediaPicker } from "./MediaPicker";
 import { PostCard, type Post } from "./PostCard";
 import { speak, stopSpeaking, useVoice } from "./useVoice";
 import { InstagramWidget } from "../InstagramWidget";
+import { NewPost } from "./NewPost";
 
 interface Msg { id: string; role: "user" | "assistant"; kind: string; content: string; payload: { postIds?: string[]; attached?: string[] } | null }
 interface Conv { id: string; title: string; updated_at: string }
@@ -34,6 +35,8 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
   const [messages, setMessages] = useState<Msg[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [delivery, setDelivery] = useState<"metricool" | "manual">("manual");
+  const [aiOn, setAiOn] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [text, setText] = useState("");
   const [attached, setAttached] = useState<Array<{ id: string; label: string }>>(initialMedia ? [{ id: initialMedia, label: "mídia escolhida na pasta" }] : []);
   const [picking, setPicking] = useState(false);
@@ -65,9 +68,12 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
   });
 
   const loadPosts = useCallback(async () => {
-    const d = await api<{ posts: Post[]; delivery: "metricool" | "manual" }>("/api/posts");
+    const d = await api<{ posts: Post[]; delivery: "metricool" | "manual"; aiEnabled: boolean }>("/api/posts");
     setPosts(d.posts);
     setDelivery(d.delivery);
+    setAiOn(d.aiEnabled);
+    if (!d.aiEnabled) setTab("calendario");
+    if (!d.aiEnabled && initialMedia) setCreating(true);
   }, []);
 
   useEffect(() => {
@@ -215,6 +221,7 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
 
   const calendar = (
     <div className="stack">
+      {canAct && <button className="btn btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => setCreating(true)}>＋ Novo post</button>}
       <div className="spread">
         <div className="filters" style={{ margin: 0 }}>
           <button className={`chip ${filter === "proximos" ? "on" : ""}`} onClick={() => setFilter("proximos")}>Próximos</button>
@@ -243,18 +250,34 @@ export function AgendaView({ canAct, initialMedia }: { canAct: boolean; initialM
         <div>
           <div className="eyebrow">📅 Agenda de posts</div>
           <h1>Agenda</h1>
-          <p className="lead">Peça em português e a IA monta o post com legenda e hashtags. Nada é publicado sem a confirmação de um dono ou gerente.</p>
+          <p className="lead">{aiOn ? "Peça em português e a IA monta o post com legenda e hashtags." : "Monte os posts com as mídias das pastas."} Nada é publicado sem a confirmação de um dono ou gerente.</p>
         </div>
       </div>
       <InstagramWidget compact />
-      <div className="tabs agenda-tabs">
-        <button className={tab === "conversa" ? "on" : ""} onClick={() => setTab("conversa")}>💬 Conversa</button>
-        <button className={tab === "calendario" ? "on" : ""} onClick={() => setTab("calendario")}>📅 Calendário{pendingCount ? ` (${pendingCount})` : ""}</button>
-      </div>
-      <div className="agenda-grid">
-        <div className={tab === "conversa" ? "" : "agenda-hide"}>{chat}</div>
-        <div className={tab === "calendario" ? "" : "agenda-hide"}>{calendar}</div>
-      </div>
+      {!aiOn && (
+        <div className="alert alert-info" style={{ marginBottom: 16 }}>
+          A IA do aplicativo está desligada. Crie os posts em <strong>＋ Novo post</strong>, ou peça a legenda e as hashtags para o Claude no chat e cole aqui.
+        </div>
+      )}
+      {aiOn && (
+        <div className="tabs agenda-tabs">
+          <button className={tab === "conversa" ? "on" : ""} onClick={() => setTab("conversa")}>💬 Conversa</button>
+          <button className={tab === "calendario" ? "on" : ""} onClick={() => setTab("calendario")}>📅 Calendário{pendingCount ? ` (${pendingCount})` : ""}</button>
+        </div>
+      )}
+      {aiOn ? (
+        <div className="agenda-grid">
+          <div className={tab === "conversa" ? "" : "agenda-hide"}>{chat}</div>
+          <div className={tab === "calendario" ? "" : "agenda-hide"}>{calendar}</div>
+        </div>
+      ) : (
+        <div style={{ maxWidth: 760 }}>{calendar}</div>
+      )}
+      {creating && (
+        <NewPost initialMedia={attached.length ? attached : initialMedia ? [{ id: initialMedia, label: "mídia da pasta" }] : []}
+          onClose={() => setCreating(false)}
+          onCreated={(p) => { setCreating(false); setPosts((list) => [...list.filter((x) => x.id !== p.id), p]); setToast("Rascunho criado. Confirme no calendário."); }} />
+      )}
       {picking && <MediaPicker initial={attached.map((a) => a.id)} onClose={() => setPicking(false)} onPick={(ids) => { setAttached(ids); setPicking(false); }} />}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
     </div>

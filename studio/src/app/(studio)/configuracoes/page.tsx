@@ -211,7 +211,7 @@ function ModelsTab() {
     <div className="card stack" style={{ maxWidth: 820 }}>
       {node}
       <div className="alert alert-info small">
-        Cérebro do estúdio: <strong>{eff.provider === "anthropic" ? "Claude (Anthropic)" : eff.provider === "openai" ? "OpenAI" : "teste (sem custo, respostas simuladas)"}</strong>.
+        Cérebro do estúdio: <strong>{eff.provider === "anthropic" ? "Claude (Anthropic)" : eff.provider === "openai" ? "OpenAI" : eff.provider === "none" ? "desligado (sem chave)" : "teste (sem custo, respostas simuladas)"}</strong>.
         Imagens: <strong>{eff.imageProvider === "manual" ? "modo manual (você gera e envia a peça)" : eff.imageProvider === "openai" ? "OpenAI Image API" : "teste"}</strong>.
         Busca de referências: <strong>{eff.embeddingProvider === "none" ? "texto completo no banco" : eff.embeddingProvider}</strong>.
         As chaves ficam só no servidor e nunca chegam ao navegador.
@@ -341,7 +341,7 @@ function IntegrationsTab() {
     <div className="stack" style={{ maxWidth: 860 }}>
       {node}
       <div className="list">
-        <Row ok={s.ai.provider !== "mock" && s.ai.keySet} title={s.ai.provider === "anthropic" ? "Claude (Anthropic)" : s.ai.provider === "openai" ? "OpenAI" : "IA de teste"}>
+        <Row ok={s.ai.provider !== "mock" && s.ai.provider !== "none" && s.ai.keySet} title={s.ai.provider === "anthropic" ? "Claude (Anthropic)" : s.ai.provider === "openai" ? "OpenAI" : s.ai.provider === "none" ? "IA desligada" : "IA de teste"}>
           Cérebro do estúdio, da agenda e do jornal. Variável: {s.ai.provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY"}.
         </Row>
         <Row ok={s.metricool.tokenSet && !!s.metricool.blogId} title="Metricool">
