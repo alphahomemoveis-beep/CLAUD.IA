@@ -119,7 +119,7 @@ npm run dev                         # http://localhost:3000 > crie a conta do do
 Para testar sem a OpenAI, use `AI_PROVIDER=mock`. As imagens viram marcadores de teste e a pesquisa avisa que é simulada.
 
 Se o banco não for o do docker-compose, crie as extensões como superusuário antes da migração (`db/init-extensions.sql`).
-No Supabase, ative `vector` em Database > Extensions e informe o certificado em `DATABASE_CA_CERT`.
+No Supabase, ative `vector` em Database > Extensions. O certificado do Supabase já vem em `certs/`; `DATABASE_CA_CERT` só é preciso para outro banco ou se o Supabase trocar o certificado.
 A marca e o Prompt Mestre iniciais são criados sozinhos no primeiro acesso.
 
 ### Verificações
