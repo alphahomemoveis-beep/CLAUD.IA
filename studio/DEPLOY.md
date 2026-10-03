@@ -42,8 +42,8 @@ branch `claude/alphahome-creative-studio-ekgn8w` na Railway.
 3. Clique em **Connect** no topo do projeto e copie a string de conexão do **Session pooler**. Ela começa com
    `postgresql://postgres.` e usa a porta `5432`. Troque `[YOUR-PASSWORD]` pela senha do banco. Este é o
    `DATABASE_URL`.
-4. Em **Database > Settings > SSL Configuration**, baixe o certificado. Abra o arquivo num editor de texto e
-   copie tudo, de `-----BEGIN CERTIFICATE-----` até `-----END CERTIFICATE-----`. Este é o `DATABASE_CA_CERT`.
+4. O certificado do Supabase já vem no app (`certs/supabase-root-2021.crt`, válido até 2031). Não é preciso
+   baixar nada: a conexão sai criptografada e verificada sozinha.
 
 Não é preciso rodar nada no banco: o app cria as tabelas sozinho ao iniciar.
 
@@ -78,7 +78,6 @@ Para ligar a IA do app:
 |---|---|
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | a string do Session pooler (passo 2) |
-| `DATABASE_CA_CERT` | o conteúdo do certificado (passo 2) |
 | `ANTHROPIC_API_KEY` | só se for usar a IA do app (passo 3) |
 | `IMAGE_PROVIDER` | `manual` |
 | `EMBEDDING_PROVIDER` | `none` |
@@ -91,7 +90,7 @@ Para ligar a IA do app:
 | `FOLDER_MAX_UPLOAD_MB` | `300` |
 
 7. Clique em **Deploy**. No log aparecem "Aplicando 001_init.sql", "Aplicando 002_pastas_agenda_jornal.sql" e
-   "Ready". Se aparecer "unable to verify the first certificate", o `DATABASE_CA_CERT` está incompleto.
+   "Ready". Se aparecer "Falha no certificado do banco", veja a tabela de problemas no fim.
 
 ## Passo 5. Primeiro acesso
 
@@ -144,7 +143,7 @@ Para ligar a IA do app:
 
 | Sintoma | Causa provável |
 |---|---|
-| Deploy falha com "unable to verify the first certificate" | `DATABASE_CA_CERT` incompleto ou ausente |
+| Deploy falha com "Falha no certificado do banco" | o Supabase trocou o certificado: baixe o novo em Database > Settings > SSL Configuration e cole em `DATABASE_CA_CERT`. Como último recurso, acrescente `?sslmode=no-verify` ao fim do `DATABASE_URL` (continua criptografado, mas sem verificar o servidor) |
 | Deploy falha com "password authentication failed" | senha errada no `DATABASE_URL` |
 | "ANTHROPIC_API_KEY é obrigatória" | `AI_PROVIDER` está como `anthropic` sem a chave; apague `AI_PROVIDER` |
 | "A IA do aplicativo está desligada" | é o esperado sem chave; cadastre `ANTHROPIC_API_KEY` para ligar |

@@ -12,18 +12,37 @@ for (const file of [".env.local", ".env"]) {
   }
 }
 
+// Mesma regra de src/lib/pg-config.ts: para o Supabase usa o certificado que
+// vem no app (certs/), a não ser que DATABASE_CA_CERT ou o sslmode da URL digam outra coisa.
 function config() {
   const url = process.env.DATABASE_URL ?? "";
   const ca = process.env.DATABASE_CA_CERT;
   if (!url) throw new Error("DATABASE_URL não definida.");
-  if (!ca?.trim()) return { connectionString: url };
   const u = new URL(url);
+  const mode = u.searchParams.get("sslmode");
+  if (mode === "disable" || mode === "no-verify") return { connectionString: url };
+  const pem = ca?.trim()
+    ? ca.replace(/\\n/g, "\n")
+    : /\.supabase\.(com|co)$/i.test(u.hostname)
+      ? readFileSync(path.resolve("certs/supabase-root-2021.crt"), "utf8")
+      : null;
+  if (!pem) return { connectionString: url };
   u.searchParams.delete("sslmode");
-  return { connectionString: u.toString(), ssl: { ca: ca.replace(/\\n/g, "\n"), rejectUnauthorized: true } };
+  return { connectionString: u.toString(), ssl: { ca: pem, rejectUnauthorized: true } };
 }
 
 const client = new pg.Client(config());
-await client.connect();
+try {
+  await client.connect();
+} catch (err) {
+  const msg = String(err?.message ?? err);
+  if (/certificate|self.signed|SSL|TLS/i.test(msg)) {
+    console.error(`Falha no certificado do banco (${msg}). Confira DATABASE_CA_CERT ou, como último recurso, acrescente ?sslmode=no-verify ao DATABASE_URL.`);
+  } else if (/password authentication/i.test(msg)) {
+    console.error("O banco recusou a senha. Confira a senha dentro do DATABASE_URL (a mesma criada no Supabase).");
+  }
+  throw err;
+}
 try {
   await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
   // Trava para duas instâncias subindo juntas não aplicarem a mesma migração.
