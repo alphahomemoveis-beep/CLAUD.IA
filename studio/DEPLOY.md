@@ -47,13 +47,23 @@ branch `claude/alphahome-creative-studio-ekgn8w` na Railway.
 
 Não é preciso rodar nada no banco: o app cria as tabelas sozinho ao iniciar.
 
-## Passo 3. Chave do Claude (opcional)
+## Passo 3. IA do app (grátis com o Gemini, ou o Claude pago)
 
-Sem a chave, o app liga com a **IA desligada**: login, pastas, agenda com posts feitos à mão, jornal e widget
-funcionam. O estúdio criativo, a agenda por conversa, a análise da biblioteca e o editorial do jornal ficam
-desligados, e dá para usar o Claude no chat para essas tarefas.
+Sem chave, o app liga com a **IA desligada**: login, pastas, agenda com posts feitos à mão, jornal e widget
+funcionam. Criar conteúdo, o estúdio criativo, a agenda por conversa, a análise da biblioteca e o editorial do
+jornal ficam desligados, e dá para usar o Claude no chat para essas tarefas.
 
-Para ligar a IA do app:
+**Grátis: Gemini, do Google.** A faixa gratuita cobre os modelos Flash, com limite de pedidos por dia.
+1. Entre em aistudio.google.com com uma conta Google e clique em **Get API key** > **Create API key**.
+2. Na Railway, cadastre `GEMINI_API_KEY` com a chave. Não precisa de cartão.
+3. Na faixa gratuita, o Google pode usar os pedidos para melhorar os produtos dele. Não mande dados sigilosos.
+4. O modelo padrão é `gemini-flash-latest`. Se o Google trocar o nome, ajuste `AI_TEXT_MODEL`.
+
+**Fotos grátis para os fundos: Pexels.** Crie uma conta em pexels.com, abra pexels.com/api, peça a chave (sai na
+hora) e cadastre `PEXELS_API_KEY` na Railway. Sem ela, você envia as fotos ou usa as das Pastas. O Pinterest não
+tem busca aberta para aplicativos, por isso não entra.
+
+**Pago: Claude, da Anthropic.** Se as duas chaves existirem, o app usa o Claude.
 
 1. Entre no console da Anthropic (platform.claude.com) e crie uma chave em **API Keys**.
 2. Adicione créditos em **Billing** e, se quiser, um limite mensal em **Limits**.
@@ -78,7 +88,9 @@ Para ligar a IA do app:
 |---|---|
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | a string do Session pooler (passo 2) |
-| `ANTHROPIC_API_KEY` | só se for usar a IA do app (passo 3) |
+| `GEMINI_API_KEY` | chave grátis do Google AI Studio (passo 3) |
+| `PEXELS_API_KEY` | chave grátis do Pexels, para buscar fundos (passo 3) |
+| `ANTHROPIC_API_KEY` | só se for usar o Claude pago (passo 3) |
 | `IMAGE_PROVIDER` | `manual` |
 | `EMBEDDING_PROVIDER` | `none` |
 | `STORAGE_DRIVER` | `local` |
@@ -146,7 +158,9 @@ Para ligar a IA do app:
 | Deploy falha com "Falha no certificado do banco" | o Supabase trocou o certificado: baixe o novo em Database > Settings > SSL Configuration e cole em `DATABASE_CA_CERT`. Como último recurso, acrescente `?sslmode=no-verify` ao fim do `DATABASE_URL` (continua criptografado, mas sem verificar o servidor) |
 | Deploy falha com "password authentication failed" | senha errada no `DATABASE_URL` |
 | "ANTHROPIC_API_KEY é obrigatória" | `AI_PROVIDER` está como `anthropic` sem a chave; apague `AI_PROVIDER` |
-| "A IA do aplicativo está desligada" | é o esperado sem chave; cadastre `ANTHROPIC_API_KEY` para ligar |
+| "A IA do aplicativo está desligada" | é o esperado sem chave; cadastre `GEMINI_API_KEY` (grátis) para ligar |
+| "O limite gratuito diário do Gemini acabou" | a faixa grátis tem limite por dia; espere ou use o Claude |
+| Vídeo falha com "Não consegui rodar o ffmpeg" | o ffmpeg que vem com o app não baixou no deploy; faça um novo deploy ou aponte `FFMPEG_PATH` para um ffmpeg instalado |
 | Login volta sempre para a tela de entrada | app aberto por `http://`; use o endereço `https://` |
 | "Origem da requisição não permitida" | `APP_URL` diferente do endereço usado no navegador |
 | Post falha com mensagem de mídia | `APP_URL` ou `APP_SECRET` ausentes |

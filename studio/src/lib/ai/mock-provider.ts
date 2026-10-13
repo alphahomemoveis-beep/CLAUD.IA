@@ -3,6 +3,7 @@ import type { Answer, Briefing, ConceptData, ConceptSet, FeedbackLesson, FinalPr
 import { QUALITY_ITEMS } from "./schemas";
 import { detectEnvironments } from "../studio/environments";
 import { parseReply } from "../studio/intent";
+import type { Opcoes } from "../criar/schemas";
 
 /**
  * Provedor de teste. Não chama nenhuma API: devolve respostas determinísticas
@@ -140,6 +141,45 @@ const PALETTES = [
 const PROTAGONISTS = ["Gavetas organizadoras", "Organização interna", "Painel ripado com LED", "Torre quente embutida", "Portas com puxador cava"];
 
 const BUILDERS: Record<string, (text: string, data: Record<string, unknown>) => unknown> = {
+  opcoes_conteudo(text): Opcoes {
+    const formato = text.match(/FORMATO PEDIDO: ([^(]+)/)?.[1]?.trim() ?? "Reels";
+    const video = /Reels|Roteiro/.test(formato);
+    const qtd = /Post do feed/.test(formato) ? 1 : /Story/.test(formato) ? 2 : /Carrossel/.test(formato) ? 5 : 5;
+    const rodada = (text.match(/^\d+\. "/gm) ?? []).length / 3 + 1;
+    const ideias = [
+      ["5 elementos", "Lista", "5 elementos de marcenaria que não podem faltar na sua casa de alto padrão."],
+      ["detalhe escondido", "Curiosidade", "Você provavelmente nunca repararia nesse detalhe…"],
+      ["antes e depois", "Revelação", "Olha como essa cozinha ficou depois da marcenaria planejada."],
+      ["erro comum", "Erro comum", "O erro que mais encarece a sua cozinha planejada."],
+      ["luz que vive", "Detalhe técnico", "A fita de LED que acende sozinha quando você abre a porta."],
+      ["casa de famoso", "Casa de famoso", "Hoje iremos avaliar os móveis da casa de uma atriz."],
+    ];
+    const pontos = ["fita de LED", "gaveta oculta", "rodapé recuado", "puxador cava", "nicho iluminado", "painel ripado", "porta de vidro", "torre quente", "ilha com cooktop", "closet aberto"];
+    return {
+      tendencias: [{ tendencia: "Listas curtas com detalhes técnicos (simulado)", evidencia: "Resposta do provedor de teste, sem pesquisa real.", fonte_url: "" }],
+      opcoes: [0, 1, 2].map((k) => {
+        const [titulo, formatoViral, gancho] = ideias[(k + (rodada - 1) * 3) % ideias.length];
+        return {
+          titulo: `${titulo[0].toUpperCase()}${titulo.slice(1)} (teste, rodada ${rodada})`,
+          formato_viral: formatoViral, gancho,
+          por_que_funciona: "Gancho claro nos primeiros segundos e um benefício concreto por ponto (texto de teste).",
+          tendencia_base: "Listas curtas com detalhes técnicos (simulado)",
+          pecas: Array.from({ length: qtd }, (_, i) => ({
+            titulo: i === 0 ? titulo : i === qtd - 1 ? "chama no direct" : `${i}º ponto`,
+            apoio: i === 0 ? "que não podem faltar na sua" : i === qtd - 1 ? "vem orçar com quem entende" : pontos[(i + k) % pontos.length],
+            texto: video ? "" : i === 0 ? "casa de alto padrão" : i === qtd - 1 ? "" : "Um detalhe técnico que muda o uso do dia a dia.",
+            fala: video ? (i === 0 ? gancho : i === qtd - 1 ? "Chama a Alfa Home no Direct e vem orçar com quem entende." : `O ${i}º ponto é a ${pontos[(i + k) % pontos.length]}.`) : "",
+            imagem: `Detalhe de marcenaria: ${pontos[(i + k) % pontos.length]}`,
+            busca_imagem: "walnut kitchen led strip",
+            duracao_s: video ? 3 : 0,
+          })),
+          legenda: "Cada detalhe pensado para a sua rotina. Chama a Alfa Home no Direct e vem orçar com quem entende.",
+          hashtags: ["#moveisplanejados", "#marcenaria", "#altopadrao", "#arquiteturadeinteriores", "#alphahome"],
+          audio_sugerido: video ? "Instrumental calmo em alta nos Reels de decoração" : "",
+        };
+      }),
+    };
+  },
   briefing(text): Briefing {
     const pedido = text.split("\n").find((l) => l.startsWith("PEDIDO:"))?.replace("PEDIDO:", "").trim() ?? text;
     const criativo = /cri[ea]|quero|fa[cç]a|ger[ea]|arte|carross?el|reels?|imagem|post|story|roteiro|v[ií]deo/i.test(pedido);

@@ -1,13 +1,14 @@
 import "server-only";
 import { defaultEmbeddingModel, env } from "../env";
 import { AnthropicProvider } from "./anthropic-provider";
+import { GeminiProvider } from "./gemini-provider";
 import { MockEmbeddings, MockImages, MockText } from "./mock-provider";
 import { OpenAIEmbeddings, OpenAIImages, OpenAIText } from "./openai-provider";
 import { VoyageEmbeddings } from "./voyage-embeddings";
 import { AIError, type EmbeddingProvider, type ImageProvider, type TextProvider } from "./types";
 
 export const AI_OFF_MESSAGE =
-  "A IA do aplicativo está desligada (sem chave da Anthropic). Pastas, agenda manual, jornal e widget continuam funcionando. Para criar com IA, peça ao Claude no chat ou cadastre ANTHROPIC_API_KEY na Railway.";
+  "A IA do aplicativo está desligada (sem chave). Pastas, agenda manual, jornal e widget continuam funcionando. Para ligar de graça, crie uma chave no Google AI Studio e cadastre GEMINI_API_KEY na Railway (ou ANTHROPIC_API_KEY para usar o Claude).";
 
 /** IA desligada: qualquer pedido de IA responde com uma mensagem clara. */
 class DisabledText implements TextProvider {
@@ -31,6 +32,7 @@ export function text(): TextProvider {
   if (textP) return textP;
   const e = env();
   textP = e.AI_PROVIDER === "anthropic" ? new AnthropicProvider(e.ANTHROPIC_API_KEY!)
+    : e.AI_PROVIDER === "gemini" ? new GeminiProvider(e.GEMINI_API_KEY!)
     : e.AI_PROVIDER === "openai" ? new OpenAIText(e.OPENAI_API_KEY!)
     : e.AI_PROVIDER === "none" ? new DisabledText() : new MockText();
   return textP;
