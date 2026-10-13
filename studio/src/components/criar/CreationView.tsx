@@ -11,7 +11,7 @@ import { Modal } from "../Modal";
 import { STATUS_LABEL } from "./CriarHome";
 import { StockPicker } from "./StockPicker";
 
-interface Peca { titulo: string; apoio: string; texto: string; fala: string; imagem: string; busca_imagem: string; duracao_s: number }
+interface Peca { titulo: string; apoio: string; texto: string; fala: string; imagem: string; busca_imagem: string; duracao_s: number; como_filmar?: string }
 interface Opcao {
   titulo: string; formato_viral: string; gancho: string; por_que_funciona: string; tendencia_base: string;
   pecas: Peca[]; legenda: string; hashtags: string[]; audio_sugerido: string;
@@ -22,6 +22,7 @@ interface Creation {
   id: string; format: Format; theme: string; status: string; error: string | null; chosen_option_id: string | null;
   research: { tendencias: Array<{ tendencia: string; evidencia: string; fonte_url: string }>; fontes: Array<{ url: string; title: string }> } | null;
   backgrounds: Bg[]; output_media_ids: string[]; updated_at: string;
+  inspiration: { origem: "arquivo" | "youtube"; url?: string; total?: number; shots?: unknown[]; estilo?: string; por_que_funciona?: string } | null;
 }
 interface View { creation: Creation; options: OptionRow[]; hasLogo: boolean; banco: string | null }
 
@@ -34,7 +35,9 @@ function scriptText(o: Opcao) {
     lines.push(`CENA ${i + 1}${p.duracao_s ? ` (${p.duracao_s}s)` : ""}`);
     if (p.fala) lines.push(`Fala: ${p.fala}`);
     lines.push(`Na tela: ${p.apoio ? `${p.apoio} / ` : ""}${p.titulo}${p.texto ? ` / ${p.texto}` : ""}`);
-    lines.push(`Imagem: ${p.imagem}`, "");
+    lines.push(`Imagem: ${p.imagem}`);
+    if (p.como_filmar) lines.push(`Como filmar: ${p.como_filmar}`);
+    lines.push("");
   });
   lines.push("LEGENDA", o.legenda, "", o.hashtags.join(" "));
   if (o.audio_sugerido) lines.push("", `Áudio: ${o.audio_sugerido}`);
@@ -112,7 +115,28 @@ export function CreationView({ id, role }: { id: string; role: string }) {
       {error && <div className="alert" style={{ marginBottom: 14 }}>{error}</div>}
       {c.error && <div className="alert" style={{ marginBottom: 14 }}>{c.error}</div>}
 
-      {c.status === "pesquisando" && (
+      {c.status === "pesquisando" && c.inspiration && (
+        <div className="working" style={{ marginBottom: 20 }}>
+          <div className="step now"><span className="dot" />{c.inspiration.origem === "arquivo" ? "Medindo os cortes e lendo cada cena do vídeo de inspiração…" : "A IA está assistindo ao vídeo do YouTube…"}</div>
+          <div className="step now"><span className="dot" />Montando a receita: o que filmar e como filmar (pode levar até 2 minutos)</div>
+        </div>
+      )}
+
+      {c.inspiration && (
+        <section className="card card-flat" style={{ marginBottom: 20, display: "grid", gridTemplateColumns: "minmax(0, 140px) minmax(0, 1fr)", gap: 14 }}>
+          {c.inspiration.origem === "arquivo"
+            ? <video src={`/api/criar/${id}/inspiracao`} controls playsInline muted style={{ width: "100%", aspectRatio: "9 / 16", objectFit: "cover", borderRadius: 10, background: "#000" }} />
+            : <a className="btn btn-sm" href={c.inspiration.url} target="_blank" rel="noreferrer" style={{ alignSelf: "start" }}>▶ Ver no YouTube</a>}
+          <div className="stack" style={{ gap: 6, minWidth: 0 }}>
+            <strong>Vídeo de inspiração</strong>
+            {c.inspiration.shots && <span className="chip chip-wood" style={{ alignSelf: "flex-start" }}>{c.inspiration.shots.length} cenas · {c.inspiration.total} s</span>}
+            {c.inspiration.estilo && <div className="small">{c.inspiration.estilo}</div>}
+            {c.inspiration.por_que_funciona && <div className="tiny muted">{c.inspiration.por_que_funciona}</div>}
+          </div>
+        </section>
+      )}
+
+      {c.status === "pesquisando" && !c.inspiration && (
         <div className="working" style={{ marginBottom: 20 }}>
           <div className={`step ${v.options.length ? "done" : "now"}`}><span className="dot" />{v.options.length ? "Tendências já pesquisadas" : "Pesquisando o que está viralizando no Instagram…"}</div>
           <div className="step now"><span className="dot" />Escrevendo 3 opções para {info.label.toLowerCase()} (pode levar até 2 minutos)</div>
@@ -131,7 +155,7 @@ export function CreationView({ id, role }: { id: string; role: string }) {
         </details>
       )}
 
-      {rounds.map((r) => {
+      {!c.inspiration && rounds.map((r) => {
         const opts = v.options.filter((o) => o.round === r);
         const body = (
           <div className="concepts" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
@@ -152,7 +176,7 @@ export function CreationView({ id, role }: { id: string; role: string }) {
         );
       })}
 
-      {canAct && v.options.length > 0 && c.status !== "pesquisando" && (
+      {canAct && !c.inspiration && v.options.length > 0 && c.status !== "pesquisando" && (
         <form className="card card-flat stack" style={{ marginBottom: 26 }} onSubmit={(e) => { e.preventDefault(); act("rodada", async () => { await api(`/api/criar/${id}/opcoes`, { method: "POST", json: { pedido } }); setPedido(""); }); }}>
           <strong>{chosen ? "Quer ver outras ideias?" : "Nenhuma serviu?"}</strong>
           <input className="input" value={pedido} onChange={(e) => setPedido(e.target.value)} maxLength={600} placeholder="O que mudar? Ex.: mais curto, falar de closet, tom mais divertido (opcional)" />
@@ -162,7 +186,12 @@ export function CreationView({ id, role }: { id: string; role: string }) {
 
       {chosen && c.format !== "roteiro" && (
         <section className="stack" style={{ marginBottom: 26 }}>
-          <div className="section-title">Logo e fundos</div>
+          <div className="section-title">{c.inspiration ? "O que me mandar" : "Logo e fundos"}</div>
+          {c.inspiration && (
+            <div className="alert alert-info small">
+              Grave cada cena como está pedido embaixo e envie no 📤 de cada uma. O app monta tudo no mesmo ritmo da inspiração, com os textos e a assinatura da marca.
+            </div>
+          )}
           <div className="card card-flat row" style={{ alignItems: "center", gap: 16 }}>
             {v.hasLogo ? <img src={`/api/brand/logo?v=${c.updated_at}`} alt="Logo da marca" style={{ height: 48, maxWidth: 160, objectFit: "contain", background: "#2a2018", padding: 6, borderRadius: 8 }} /> : <span className="chip chip-warn">Sem logo</span>}
             <div className="stack" style={{ gap: 4, flex: 1, minWidth: 200 }}>
@@ -175,7 +204,7 @@ export function CreationView({ id, role }: { id: string; role: string }) {
           </div>
 
           <div className="spread">
-            <span className="small muted">Escolha um fundo para cada {c.format === "reels" ? "cena" : "página"}. Sem fundo, entra a madeira com luz de LED da marca.</span>
+            <span className="small muted">{c.inspiration ? "Uma gravação por cena. Cena sem gravação usa a madeira com luz de LED da marca." : `Escolha um fundo para cada ${c.format === "reels" ? "cena" : "página"}. Sem fundo, entra a madeira com luz de LED da marca.`}</span>
             {canAct && v.banco && <button className="btn btn-sm" disabled={busyAll} onClick={() => setBg({ origem: "auto" })}>{busy === "fundo" ? <span className="spinner" /> : `✨ Completar com fotos do ${v.banco}`}</button>}
           </div>
           {!v.banco && <div className="tiny muted">Busca de fotos desligada: cadastre <code>PIXABAY_API_KEY</code> (grátis em pixabay.com/api/docs) para buscar fotos e vídeos sem sair do app.</div>}
@@ -193,7 +222,9 @@ export function CreationView({ id, role }: { id: string; role: string }) {
                     <span className="badge chip">{i + 1}</span>
                   </div>
                   <div className="meta">
-                    <span className="tiny muted" title={p.imagem}>{p.imagem}</span>
+                    {c.inspiration && <span className="tiny"><strong>Cena {i + 1} · {p.duracao_s}s</strong></span>}
+                    <span className={c.inspiration ? "tiny" : "tiny muted"} title={p.imagem}>{c.inspiration ? `🎥 ${p.imagem}` : p.imagem}</span>
+                    {p.como_filmar && <span className="tiny muted">📐 {p.como_filmar}</span>}
                     {bg?.credito && <a className="tiny" href={bg.credito_url} target="_blank" rel="noreferrer">{bg.credito}</a>}
                     {canAct && (
                       <div className="row" style={{ gap: 4 }}>
@@ -244,7 +275,7 @@ export function CreationView({ id, role }: { id: string; role: string }) {
                 <table className="script-table">
                   <thead><tr><th>#</th><th>Fala</th><th>Na tela</th><th>Imagem</th><th>s</th></tr></thead>
                   <tbody>{chosen.data.pecas.map((p, i) => (
-                    <tr key={i}><td>{i + 1}</td><td>{p.fala}</td><td><em>{p.apoio}</em> <strong>{p.titulo}</strong>{p.texto ? ` · ${p.texto}` : ""}</td><td>{p.imagem}</td><td>{p.duracao_s || ""}</td></tr>
+                    <tr key={i}><td>{i + 1}</td><td>{p.fala}</td><td><em>{p.apoio}</em> <strong>{p.titulo}</strong>{p.texto ? ` · ${p.texto}` : ""}</td><td>{p.imagem}{p.como_filmar ? <div className="muted">📐 {p.como_filmar}</div> : null}</td><td>{p.duracao_s || ""}</td></tr>
                   ))}</tbody>
                 </table>
               </div>

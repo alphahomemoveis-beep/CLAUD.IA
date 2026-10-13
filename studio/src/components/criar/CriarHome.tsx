@@ -21,6 +21,24 @@ export function CriarHome({ canAct }: { canAct: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<{ creations: Item[]; aiEnabled: boolean } | null>(null);
+  const [insp, setInsp] = useState<{ file: File | null; url: string; tema: string }>({ file: null, url: "", tema: "" });
+
+  async function startInspiration(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      if (insp.file) fd.append("file", insp.file);
+      else fd.append("url", insp.url);
+      fd.append("tema", insp.tema);
+      const r = await api<{ id: string }>("/api/criar/inspiracao", { method: "POST", body: fd });
+      router.push(`/criar/${r.id}`);
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  }
 
   useEffect(() => { api<{ creations: Item[]; aiEnabled: boolean }>("/api/criar").then(setData).catch((e) => setError(e.message)); }, []);
 
@@ -76,6 +94,21 @@ export function CriarHome({ canAct }: { canAct: boolean }) {
           </button>
           {!canAct && <span className="small muted">Só donos e gerentes criam conteúdo.</span>}
         </div>
+      </form>
+
+      <form className="card card-flat stack" style={{ marginTop: 28 }} onSubmit={startInspiration}>
+        <div>
+          <strong>🎞️ Igual a um vídeo de inspiração</strong>
+          <div className="small muted">Mande um vídeo que você gostou. A IA mede os cortes, diz o que filmar em cada cena e o app monta no mesmo ritmo, com a cara da marca.</div>
+        </div>
+        <label className="btn btn-sm" style={{ alignSelf: "flex-start" }}>
+          {insp.file ? `🎬 ${insp.file.name.slice(0, 28)}` : "📤 Enviar o vídeo"}
+          <input type="file" accept="video/mp4,video/quicktime,video/webm" hidden onChange={(e) => setInsp({ ...insp, file: e.target.files?.[0] ?? null, url: "" })} />
+        </label>
+        <input className="input" value={insp.url} disabled={!!insp.file} onChange={(e) => setInsp({ ...insp, url: e.target.value })} placeholder="ou cole um link do YouTube" />
+        <span className="tiny muted">Do Instagram ou do TikTok: salve o vídeo no celular (ou grave a tela) e envie o arquivo. Esses apps não deixam baixar pelo link.</span>
+        <input className="input" value={insp.tema} maxLength={600} onChange={(e) => setInsp({ ...insp, tema: e.target.value })} placeholder="Sobre o que vai ser o vídeo da marca? (opcional)" />
+        <div><button className="btn btn-primary" disabled={!canAct || busy || (!insp.file && !insp.url.trim()) || (data !== null && !data.aiEnabled)}>{busy ? <span className="spinner" /> : "Analisar e montar a receita"}</button></div>
       </form>
 
       <div className="section-title" style={{ marginTop: 36 }}>Criações recentes</div>

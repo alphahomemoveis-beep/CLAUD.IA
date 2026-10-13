@@ -23,6 +23,7 @@ export class OpenAIText implements TextProvider {
   }
 
   async structured<T>(req: StructuredRequest<T>): Promise<StructuredResult<T>> {
+    if (req.videoUrl) throw new AIError("Link do YouTube só funciona com o Gemini. Envie o arquivo do vídeo.", "indisponivel");
     const input: ResponseInputItem[] = req.messages.map((m, i) => {
       const isLast = i === req.messages.length - 1;
       if (m.role === "user" && isLast && req.images?.length) {

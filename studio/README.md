@@ -100,6 +100,12 @@ Tela 🎬 **Criar conteúdo** (`/criar`):
    para a pessoa escolher o som em alta no próprio Instagram.
 6. O resultado vai para Pastas > Criações do app e pode virar rascunho na Agenda com a legenda pronta.
 
+**Igual a um vídeo de inspiração:** a pessoa envia o arquivo de um vídeo (ou um link do YouTube, só com o
+Gemini). O ffmpeg mede os cortes e tira uma foto de cada cena; a IA descreve o estilo e devolve a receita: o
+que filmar e como filmar em cada cena, com a mesma duração. A pessoa envia uma gravação por cena e o app monta
+o Reels no mesmo ritmo. Links do Instagram e do TikTok são recusados com explicação: esses apps não deixam
+baixar vídeos; a pessoa salva o vídeo e envia o arquivo.
+
 O roteiro de vídeo e o Reels trazem a tabela de falas para a apresentadora gravar. Gerar vídeo com IA (de texto
 para vídeo) não está incluído: não há opção gratuita estável hoje.
 

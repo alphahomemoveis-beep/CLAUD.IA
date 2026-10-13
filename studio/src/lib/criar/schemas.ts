@@ -11,6 +11,7 @@ export const PecaSchema = z.object({
   imagem: z.string().max(200).describe("O que a imagem de fundo deve mostrar, em português, exatamente o que a fala ou o texto descreve"),
   busca_imagem: z.string().max(60).describe("De 2 a 5 palavras em inglês para buscar essa foto num banco de imagens (ex.: 'walnut kitchen led strip')"),
   duracao_s: z.number().min(0).max(12).describe("Duração da cena em segundos (de 2 a 6 em Reels e roteiro); 0 nas artes estáticas"),
+  como_filmar: z.string().max(240).describe("Como filmar ou fotografar esta cena: enquadramento, ângulo, movimento de câmera, luz e duração do take. Vazio quando não se aplica"),
 });
 export type Peca = z.infer<typeof PecaSchema>;
 
@@ -20,7 +21,7 @@ export const OpcaoSchema = z.object({
   gancho: z.string().max(220).describe("A frase dos primeiros 3 segundos (ou a capa do carrossel)"),
   por_que_funciona: z.string().max(500).describe("Por que esta opção tende a viralizar, ligando à tendência pesquisada e ao público da marca"),
   tendencia_base: z.string().max(240).describe("Qual tendência da pesquisa esta opção aproveita"),
-  pecas: z.array(PecaSchema).min(1).max(10).describe("Cenas (Reels, roteiro) ou páginas (carrossel, story, feed), na ordem"),
+  pecas: z.array(PecaSchema).min(1).max(12).describe("Cenas (Reels, roteiro) ou páginas (carrossel, story, feed), na ordem"),
   legenda: z.string().max(1800).describe("Legenda pronta para o post, com chamada para o Direct"),
   hashtags: z.array(z.string().max(40)).max(12).describe("De 5 a 10 hashtags, com #"),
   audio_sugerido: z.string().max(160).describe("Tipo de áudio em alta para escolher no Instagram, ou vazio para artes"),
@@ -36,3 +37,11 @@ export const OpcoesSchema = z.object({
   opcoes: z.array(OpcaoSchema).length(3).describe("Exatamente 3 opções bem diferentes entre si"),
 });
 export type Opcoes = z.infer<typeof OpcoesSchema>;
+
+/** Receita para recriar um vídeo de inspiração com o material da marca. */
+export const ReceitaSchema = z.object({
+  estilo: z.string().max(600).describe("Como é o vídeo de inspiração: formato, ritmo de cortes, enquadramentos, textos na tela, transições e clima"),
+  por_que_funciona: z.string().max(400).describe("Por que esse molde prende a atenção"),
+  opcao: OpcaoSchema.describe("O vídeo da marca no mesmo molde: uma peça por cena da inspiração, na mesma ordem e com a mesma duração"),
+});
+export type Receita = z.infer<typeof ReceitaSchema>;

@@ -3,7 +3,7 @@ import type { Answer, Briefing, ConceptData, ConceptSet, FeedbackLesson, FinalPr
 import { QUALITY_ITEMS } from "./schemas";
 import { detectEnvironments } from "../studio/environments";
 import { parseReply } from "../studio/intent";
-import type { Opcoes } from "../criar/schemas";
+import type { Opcoes, Receita } from "../criar/schemas";
 
 /**
  * Provedor de teste. Não chama nenhuma API: devolve respostas determinísticas
@@ -141,6 +141,31 @@ const PALETTES = [
 const PROTAGONISTS = ["Gavetas organizadoras", "Organização interna", "Painel ripado com LED", "Torre quente embutida", "Portas com puxador cava"];
 
 const BUILDERS: Record<string, (text: string, data: Record<string, unknown>) => unknown> = {
+  receita_inspiracao(text): Receita {
+    const duracoes = [...text.matchAll(/CENA (\d+): (\d+(?:\.\d+)?) s/g)].map((m) => Number(m[2]));
+    const n = duracoes.length || 5;
+    const pontos = ["gaveta abrindo", "fita de LED acendendo", "puxador cava", "nicho iluminado", "porta de correr", "rodapé recuado"];
+    return {
+      estilo: "Vídeo vertical com cortes secos, câmera parada e um título grande por cena (leitura simulada do provedor de teste).",
+      por_que_funciona: "Cada corte revela um detalhe novo, o que segura a atenção até o fim (texto de teste).",
+      opcao: {
+        titulo: "Detalhes que fazem a diferença (teste)", formato_viral: "Revelação de detalhes", gancho: "Repara nesse detalhe…",
+        por_que_funciona: "Mesmo ritmo da inspiração, com o material da marca.", tendencia_base: "Vídeo de inspiração enviado",
+        pecas: Array.from({ length: n }, (_, i) => ({
+          titulo: i === 0 ? "repara" : i === n - 1 ? "chama no direct" : `${i}º detalhe`,
+          apoio: i === n - 1 ? "vem orçar com quem entende" : pontos[i % pontos.length],
+          texto: "", fala: "",
+          imagem: `Close de ${pontos[i % pontos.length]}`,
+          busca_imagem: "wood cabinet detail",
+          duracao_s: duracoes[i] ?? 2,
+          como_filmar: `Filme ${duracoes[i] ?? 2}s, celular na vertical, close de cima, câmera parada.`,
+        })),
+        legenda: "Cada detalhe pensado para a sua rotina. Chama a Alfa Home no Direct e vem orçar com quem entende.",
+        hashtags: ["#moveisplanejados", "#marcenaria", "#altopadrao"],
+        audio_sugerido: "O mesmo tipo de áudio do vídeo de inspiração",
+      },
+    };
+  },
   opcoes_conteudo(text): Opcoes {
     const formato = text.match(/FORMATO PEDIDO: ([^(]+)/)?.[1]?.trim() ?? "Reels";
     const video = /Reels|Roteiro/.test(formato);
@@ -172,6 +197,7 @@ const BUILDERS: Record<string, (text: string, data: Record<string, unknown>) => 
             imagem: `Detalhe de marcenaria: ${pontos[(i + k) % pontos.length]}`,
             busca_imagem: "walnut kitchen led strip",
             duracao_s: video ? 3 : 0,
+            como_filmar: video ? "Celular na vertical, parado no tripé, luz da fita de LED acesa." : "",
           })),
           legenda: "Cada detalhe pensado para a sua rotina. Chama a Alfa Home no Direct e vem orçar com quem entende.",
           hashtags: ["#moveisplanejados", "#marcenaria", "#altopadrao", "#arquiteturadeinteriores", "#alphahome"],

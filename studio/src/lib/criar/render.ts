@@ -210,7 +210,7 @@ export async function renderReel(scenes: Scene[], end: { bg: Buffer; overlay: Bu
   try {
     const parts: string[] = [];
     for (const [i, s] of scenes.entries()) {
-      const d = Math.max(1, Math.min(12, s.seconds)).toFixed(2);
+      const d = Math.max(0.5, Math.min(12, s.seconds)).toFixed(2);
       const bgFile = `bg${i}.${s.bg.kind === "image" ? "jpg" : "mp4"}`;
       await writeFile(path.join(dir, bgFile), s.bg.data);
       await writeFile(path.join(dir, `ov${i}.png`), s.overlay);
