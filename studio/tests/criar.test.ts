@@ -59,22 +59,63 @@ describe("Gemini (opção gratuita)", () => {
     expect(seen[0].headers["x-goog-api-key"]).toBe("AQ.chave-nova");
   });
 
+  /** Sem esperas de verdade nos testes. */
+  class FastGemini extends GeminiProvider { protected sleep() { return Promise.resolve(); } }
+  const ask = (g: GeminiProvider, webSearch = false) =>
+    g.structured({ schemaName: "x", schema: z.object({ nome: z.string() }), system: "", messages: [{ role: "user", text: "a" }], model: "gemini-flash-latest", webSearch });
+
   it("chave recusada (401) e projeto sem faixa grátis viram mensagens claras", async () => {
-    const call = () => new GeminiProvider("k").structured({ schemaName: "x", schema: z.object({}), system: "", messages: [{ role: "user", text: "a" }], model: "m" });
     vi.stubGlobal("fetch", vi.fn(async () => new Response("ACCESS_TOKEN_TYPE_UNSUPPORTED", { status: 401 })));
-    await expect(call()).rejects.toThrow(/Crie uma chave nova/);
+    await expect(ask(new FastGemini("k"))).rejects.toThrow(/Crie uma chave nova/);
     vi.stubGlobal("fetch", vi.fn(async () => new Response("Quota exceeded, limit: 0", { status: 429 })));
-    await expect(call()).rejects.toThrow(/faixa gratuita para o projeto/);
+    await expect(ask(new FastGemini("k"))).rejects.toThrow(/faixa gratuita para o projeto/);
+  });
+
+  it("modelo cheio (503): tenta de novo e passa para o modelo leve", async () => {
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => {
+      urls.push(u);
+      return u.includes("flash-lite") ? textResp(JSON.stringify({ nome: "ok" })) : new Response('{"error":{"code":503,"status":"UNAVAILABLE"}}', { status: 503 });
+    }));
+    const r = await ask(new FastGemini("k"));
+    expect(r.data).toEqual({ nome: "ok" });
+    expect(urls.filter((u) => u.includes("gemini-flash-latest"))).toHaveLength(3);
+    expect(urls.at(-1)).toContain("gemini-flash-lite-latest");
+  });
+
+  it("limite por minuto espera o tempo pedido pelo Google e tenta de novo", async () => {
+    let n = 0;
+    const g = new FastGemini("k");
+    const slept: number[] = [];
+    (g as unknown as { sleep: (ms: number) => Promise<void> }).sleep = async (ms) => { slept.push(ms); };
+    vi.stubGlobal("fetch", vi.fn(async () => (++n === 1
+      ? new Response('{"error":{"code":429,"details":[{"retryDelay":"12s"}]}}', { status: 429 })
+      : textResp(JSON.stringify({ nome: "ok" })))));
+    expect((await ask(g)).data).toEqual({ nome: "ok" });
+    expect(slept).toEqual([12500]);
+  });
+
+  it("cota do dia acabada em todos os modelos vira mensagem clara", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response('{"error":{"code":429,"message":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}}', { status: 429 })));
+    await expect(ask(new FastGemini("k"))).rejects.toThrow(/cota grátis de hoje/);
+  });
+
+  it("sem cota para a pesquisa, responde assim mesmo sem pesquisa", async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      bodies.push(body);
+      if (body.tools) return new Response('{"error":{"code":429,"message":"PerDay"}}', { status: 429 });
+      return textResp(JSON.stringify({ nome: "sem pesquisa" }));
+    }));
+    const r = await ask(new FastGemini("k"), true);
+    expect(r.data).toEqual({ nome: "sem pesquisa" });
+    expect(JSON.stringify(bodies.at(-1))).toContain("pesquisa na web não está disponível");
   });
 
   it("limite gratuito esgotado vira mensagem clara", async () => {
-    vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn(async () => new Response("quota", { status: 429 })));
-    const p = new GeminiProvider("k").structured({ schemaName: "x", schema: z.object({}), system: "", messages: [{ role: "user", text: "a" }], model: "m" });
-    const expectation = expect(p).rejects.toThrow(/limite gratuito/);
-    await vi.runAllTimersAsync();
-    await expectation;
-    vi.useRealTimers();
+    await expect(ask(new FastGemini("k"))).rejects.toThrow(/pedidos demais seguidos/);
   });
 });
 

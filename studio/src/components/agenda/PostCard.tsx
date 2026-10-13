@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/client";
 import { Modal } from "../Modal";
+import { ShareToInstagram } from "./ShareToInstagram";
 
 export interface PostMedia { id: string; tipo: "image" | "video"; pasta: string; etapa: string; legenda: string }
 export interface Post {
@@ -60,6 +61,7 @@ export function PostCard({ post, canAct, onChange, onNotice, compact }: Props) {
         </div>
         <div className="stack" style={{ gap: 6, minWidth: 0 }}>
           <div style={{ fontWeight: 600 }}>{post.when.charAt(0).toUpperCase() + post.when.slice(1)}</div>
+          {post.status === "agendado" && post.delivery === "manual" && past && <span className="chip chip-warn" style={{ alignSelf: "flex-start" }}>⏰ Hora de postar</span>}
           <div className="row" style={{ gap: 4 }}>
             {statusChip(post)}
             <span className="chip">{TYPE_LABEL[post.post_type]}</span>
@@ -79,6 +81,7 @@ export function PostCard({ post, canAct, onChange, onNotice, compact }: Props) {
               )}
               <button className="btn btn-sm" disabled={busy} onClick={() => setEditing(true)}>Editar</button>
               {!post.pending_action && <button className="btn btn-sm btn-ghost" disabled={busy} onClick={() => act("cancel", post.status === "rascunho" ? "Rascunho descartado." : "Pedido de cancelamento criado. Confirme no cartão.")}>{post.status === "rascunho" ? "Descartar" : "Cancelar"}</button>}
+              {post.status === "agendado" && post.delivery === "manual" && <ShareToInstagram post={post} onPublished={() => act("published", "Marcado como publicado.")} />}
               {post.status === "agendado" && post.delivery === "manual" && past && <button className="btn btn-sm" disabled={busy} onClick={() => act("published", "Marcado como publicado.")}>Marcar como publicado</button>}
             </div>
           )}

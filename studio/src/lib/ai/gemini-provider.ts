@@ -47,33 +47,75 @@ function geminiSchema(schema: Record<string, unknown>): unknown {
 export class GeminiProvider implements TextProvider {
   readonly name = "gemini";
 
-  constructor(private apiKey: string) {}
+  /** Modelos de reserva, usados quando o principal está cheio ou sem cota. */
+  private fallbacks: string[];
 
+  constructor(private apiKey: string, fallbacks?: string[]) {
+    this.fallbacks = fallbacks ?? ["gemini-flash-lite-latest"];
+  }
+
+  /**
+   * Chama o Gemini com as regras da faixa grátis: espera o tempo que o Google
+   * pede no limite por minuto, tenta de novo quando o modelo está cheio e,
+   * se ainda assim não der, passa para o modelo mais leve, que tem cota própria.
+   */
   private async generate(model: string, body: Record<string, unknown>): Promise<GenerateResponse> {
-    let lastErr = "";
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const res = await fetch(`${BASE}/models/${encodeURIComponent(model)}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(180_000),
-      });
-      if (res.ok) return (await res.json()) as GenerateResponse;
-      lastErr = (await res.text()).slice(0, 500);
-      if (res.status === 429) {
-        if (/limit:\s*0\b/.test(lastErr)) throw new AIError("O Google não liberou a faixa gratuita para o projeto dessa chave. No Google AI Studio, crie a chave num projeto novo.", "indisponivel");
-        if (attempt < 2) { await new Promise((r) => setTimeout(r, 4000 * (attempt + 1))); continue; }
-        throw new AIError("O limite gratuito diário do Gemini acabou. Tente de novo mais tarde ou amanhã.", "limite");
+    const models = [model, ...this.fallbacks.filter((m) => m !== model)];
+    let last: { status: number; body: string } = { status: 0, body: "" };
+    for (const m of models) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        let res: Response;
+        try {
+          res = await fetch(`${BASE}/models/${encodeURIComponent(m)}:generateContent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(180_000),
+          });
+        } catch (err) {
+          last = { status: 0, body: String(err) };
+          if (attempt < 2) { await this.sleep(2000 * (attempt + 1)); continue; }
+          break;
+        }
+        if (res.ok) return (await res.json()) as GenerateResponse;
+        last = { status: res.status, body: (await res.text()).slice(0, 1500) };
+        if (res.status === 400 && /api key/i.test(last.body)) throw new AIError("A chave do Gemini (GEMINI_API_KEY) é inválida.", "indisponivel");
+        if (res.status === 401) throw new AIError("O Gemini recusou a chave (GEMINI_API_KEY). Crie uma chave nova no Google AI Studio e troque na Railway.", "indisponivel");
+        if (res.status === 403) throw new AIError("O Gemini recusou a chave (GEMINI_API_KEY). Confira se ela foi criada no Google AI Studio.", "indisponivel");
+        if (res.status === 404) break; // modelo não existe: tenta o próximo
+        if (res.status === 429) {
+          if (/limit:\s*0\b/.test(last.body) && m === models.at(-1)) {
+            throw new AIError("O Google não liberou a faixa gratuita para o projeto dessa chave. No Google AI Studio, crie a chave num projeto novo.", "indisponivel");
+          }
+          if (/PerDay/i.test(last.body) || /limit:\s*0\b/.test(last.body)) break; // cota do dia deste modelo acabou: próximo modelo
+          const wait = GeminiProvider.retryDelay(last.body);
+          if (attempt < 2 && wait <= 45_000) { await this.sleep(wait); continue; }
+          break;
+        }
+        if (res.status >= 500 && attempt < 2) { await this.sleep(3000 * (attempt + 1)); continue; }
+        if (res.status >= 500) break;
+        log.warn("gemini_erro", { model: m, status: res.status, err: last.body.slice(0, 500) });
+        throw new AIError(`O Gemini respondeu com erro ${res.status}. Tente de novo.`);
       }
-      if (res.status >= 500 && attempt < 2) { await new Promise((r) => setTimeout(r, 2000 * (attempt + 1))); continue; }
-      if (res.status === 400 && /api key/i.test(lastErr)) throw new AIError("A chave do Gemini (GEMINI_API_KEY) é inválida.", "indisponivel");
-      if (res.status === 401) throw new AIError("O Gemini recusou a chave (GEMINI_API_KEY). Crie uma chave nova no Google AI Studio e troque na Railway.", "indisponivel");
-      if (res.status === 403) throw new AIError("O Gemini recusou a chave (GEMINI_API_KEY). Confira se ela foi criada no Google AI Studio.", "indisponivel");
-      if (res.status === 404) throw new AIError(`O modelo ${model} não existe no Gemini. Ajuste AI_TEXT_MODEL.`, "indisponivel");
-      break;
+      log.warn("gemini_troca_modelo", { de: m, status: last.status, err: last.body.slice(0, 300) });
     }
-    log.warn("gemini_erro", { model, err: lastErr });
-    throw new AIError(`O Gemini respondeu com erro: ${lastErr.slice(0, 200)}`);
+    if (last.status === 429) {
+      throw new AIError(/PerDay/i.test(last.body)
+        ? "A cota grátis de hoje do Gemini acabou. Ela volta amanhã."
+        : "O Gemini grátis recebeu pedidos demais seguidos. Espere 1 ou 2 minutos e tente de novo.", "limite");
+    }
+    if (last.status === 404) throw new AIError(`O modelo ${model} não existe no Gemini. Ajuste AI_TEXT_MODEL.`, "indisponivel");
+    throw new AIError("O Gemini está sobrecarregado agora (é a versão grátis). Tente de novo em alguns minutos.", "indisponivel");
+  }
+
+  /** Tempo de espera que o Google pede ("retryDelay": "37s"), com folga; padrão de 5 s. */
+  static retryDelay(body: string) {
+    const s = Number(body.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/)?.[1]);
+    return Number.isFinite(s) && s > 0 ? Math.ceil(s * 1000) + 500 : 5000;
+  }
+
+  protected sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
   }
 
   private check(res: GenerateResponse) {
@@ -108,13 +150,23 @@ export class GeminiProvider implements TextProvider {
 
     // Mesma ideia do Claude: a busca do Google escreve notas com fontes e,
     // numa segunda chamada sem ferramentas, as notas viram JSON.
+    let research: GenerateResponse | null = null;
     if (req.webSearch) {
-      const research = await this.generate(req.model, {
-        systemInstruction: { parts: [{ text: `${req.system}\n\nPesquise no Google e escreva notas objetivas em português, dizendo de onde veio cada informação e a data da fonte.` }] },
-        contents,
-        tools: [{ google_search: {} }],
-      });
-      this.check(research);
+      try {
+        research = await this.generate(req.model, {
+          systemInstruction: { parts: [{ text: `${req.system}\n\nPesquise no Google e escreva notas objetivas em português, dizendo de onde veio cada informação e a data da fonte.` }] },
+          contents,
+          tools: [{ google_search: {} }],
+        });
+        this.check(research);
+      } catch (err) {
+        // Sem pesquisa (cota da busca ou modelo cheio), a resposta sai assim mesmo, avisando.
+        if (!(err instanceof AIError) || err.kind === "recusa") throw err;
+        log.warn("gemini_pesquisa_indisponivel", { err: err.message });
+        contents = [...contents, { role: "user", parts: [{ text: "A pesquisa na web não está disponível agora. Responda com o seu conhecimento, deixe claro nas tendências que elas não vêm de pesquisa feita hoje e deixe fonte_url vazio." }] }];
+      }
+    }
+    if (research) {
       const chunks = research.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
       const seen = new Map<string, Source>();
       for (const c of chunks) if (c.web?.uri && !seen.has(c.web.uri)) seen.set(c.web.uri, { url: c.web.uri, title: c.web.title ?? c.web.uri, page_age: null });
