@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
+import { DbStatus } from "@/components/DbStatus";
 
 export default function FirstAccessPage() {
   const [needed, setNeeded] = useState<boolean | null>(null);
@@ -38,6 +39,7 @@ export default function FirstAccessPage() {
         <div className="small" style={{ color: "#9c9185" }}>Esta tela só funciona uma vez.</div>
       </div>
       <div className="login-form">
+        <DbStatus />
         {needed === null && <span className="spinner" />}
         {needed === false && (
           <div className="stack" style={{ maxWidth: 360 }}>

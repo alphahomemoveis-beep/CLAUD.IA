@@ -11,7 +11,7 @@
     "test": "vitest run",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "tsx scripts/seed.ts",
-    "start:prod": "node scripts/migrate.mjs && next start"
+    "start:prod": "node scripts/start.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
+import { DbStatus } from "@/components/DbStatus";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -37,6 +38,7 @@ export default function LoginPage() {
         <div className="small" style={{ color: "#9c9185" }}>A IA propõe. Você escolhe. A IA executa.</div>
       </div>
       <div className="login-form">
+        <DbStatus />
         <form onSubmit={submit}>
           <div>
             <div className="eyebrow">Acesso privado</div>

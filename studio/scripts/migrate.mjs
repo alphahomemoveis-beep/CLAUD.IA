@@ -3,6 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import pg from "pg";
+import { diagnoseDbError } from "./db-diagnose.mjs";
 
 for (const file of [".env.local", ".env"]) {
   if (!existsSync(file)) continue;
@@ -17,7 +18,7 @@ for (const file of [".env.local", ".env"]) {
 function config() {
   const url = process.env.DATABASE_URL ?? "";
   const ca = process.env.DATABASE_CA_CERT;
-  if (!url) throw new Error("DATABASE_URL não definida.");
+  if (!url.trim()) throw new Error("DATABASE_URL não definida.");
   const u = new URL(url);
   const mode = u.searchParams.get("sslmode");
   if (mode === "disable" || mode === "no-verify") return { connectionString: url };
@@ -31,16 +32,13 @@ function config() {
   return { connectionString: u.toString(), ssl: { ca: pem, rejectUnauthorized: true } };
 }
 
-const client = new pg.Client(config());
+let client;
 try {
+  client = new pg.Client(config());
   await client.connect();
 } catch (err) {
-  const msg = String(err?.message ?? err);
-  if (/certificate|self.signed|SSL|TLS/i.test(msg)) {
-    console.error(`Falha no certificado do banco (${msg}). Confira DATABASE_CA_CERT ou, como último recurso, acrescente ?sslmode=no-verify ao DATABASE_URL.`);
-  } else if (/password authentication/i.test(msg)) {
-    console.error("O banco recusou a senha. Confira a senha dentro do DATABASE_URL (a mesma criada no Supabase).");
-  }
+  // Linha lida por scripts/start.mjs para mostrar o problema na tela de login.
+  console.error(`DIAGNOSTICO: ${diagnoseDbError(err)}`);
   throw err;
 }
 try {
