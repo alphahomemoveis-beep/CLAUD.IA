@@ -17,13 +17,13 @@ interface Opcao {
   pecas: Peca[]; legenda: string; hashtags: string[]; audio_sugerido: string;
 }
 interface OptionRow { id: string; round: number; number: number; request: string; data: Opcao; chosen: boolean }
-interface Bg { peca: number; origem: "upload" | "pasta" | "pexels"; media_type: "image" | "video"; credito?: string; credito_url?: string }
+interface Bg { peca: number; origem: "upload" | "pasta" | "banco" | "pexels"; media_type: "image" | "video"; credito?: string; credito_url?: string }
 interface Creation {
   id: string; format: Format; theme: string; status: string; error: string | null; chosen_option_id: string | null;
   research: { tendencias: Array<{ tendencia: string; evidencia: string; fonte_url: string }>; fontes: Array<{ url: string; title: string }> } | null;
   backgrounds: Bg[]; output_media_ids: string[]; updated_at: string;
 }
-interface View { creation: Creation; options: OptionRow[]; hasLogo: boolean; pexels: boolean }
+interface View { creation: Creation; options: OptionRow[]; hasLogo: boolean; banco: string | null }
 
 const POST_TYPE: Record<Format, Post["post_type"]> = { reels: "REEL", feed: "POST", story: "STORY", carrossel: "CARROSSEL", roteiro: "REEL" };
 const WORKING = new Set(["pesquisando", "renderizando"]);
@@ -47,7 +47,7 @@ export function CreationView({ id, role }: { id: string; role: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [pedido, setPedido] = useState("");
-  const [picker, setPicker] = useState<{ peca: number; kind: "pasta" | "pexels" } | null>(null);
+  const [picker, setPicker] = useState<{ peca: number; kind: "pasta" | "banco" } | null>(null);
   const [posting, setPosting] = useState(false);
   const [posted, setPosted] = useState<string | null>(null);
   const [bgVersion, setBgVersion] = useState(0);
@@ -176,9 +176,9 @@ export function CreationView({ id, role }: { id: string; role: string }) {
 
           <div className="spread">
             <span className="small muted">Escolha um fundo para cada {c.format === "reels" ? "cena" : "página"}. Sem fundo, entra a madeira com luz de LED da marca.</span>
-            {canAct && v.pexels && <button className="btn btn-sm" disabled={busyAll} onClick={() => setBg({ origem: "auto" })}>{busy === "fundo" ? <span className="spinner" /> : "✨ Completar com fotos do Pexels"}</button>}
+            {canAct && v.banco && <button className="btn btn-sm" disabled={busyAll} onClick={() => setBg({ origem: "auto" })}>{busy === "fundo" ? <span className="spinner" /> : `✨ Completar com fotos do ${v.banco}`}</button>}
           </div>
-          {!v.pexels && <div className="tiny muted">Busca de fotos desligada: cadastre <code>PEXELS_API_KEY</code> (grátis em pexels.com/api) para buscar fotos e vídeos sem sair do app.</div>}
+          {!v.banco && <div className="tiny muted">Busca de fotos desligada: cadastre <code>PIXABAY_API_KEY</code> (grátis em pixabay.com/api/docs) para buscar fotos e vídeos sem sair do app.</div>}
 
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) upload(f); }} />
           <div className="images" style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${tall ? 150 : 170}px, 1fr))`, gap: 12 }}>
@@ -199,7 +199,7 @@ export function CreationView({ id, role }: { id: string; role: string }) {
                       <div className="row" style={{ gap: 4 }}>
                         <button className="btn btn-xs" title="Enviar foto ou vídeo" disabled={busyAll} onClick={() => { uploadFor.current = i; fileRef.current?.click(); }}>📤</button>
                         <button className="btn btn-xs" title="Escolher das Pastas" disabled={busyAll} onClick={() => setPicker({ peca: i, kind: "pasta" })}>🗂️</button>
-                        {v.pexels && <button className="btn btn-xs" title="Buscar no Pexels" disabled={busyAll} onClick={() => setPicker({ peca: i, kind: "pexels" })}>🔎</button>}
+                        {v.banco && <button className="btn btn-xs" title={`Buscar no ${v.banco}`} disabled={busyAll} onClick={() => setPicker({ peca: i, kind: "banco" })}>🔎</button>}
                         {bg && <button className="btn btn-xs" title="Tirar o fundo" disabled={busyAll} onClick={() => setBg({ origem: "remover", peca: i })}>✕</button>}
                       </div>
                     )}
@@ -273,9 +273,9 @@ export function CreationView({ id, role }: { id: string; role: string }) {
       {picker?.kind === "pasta" && (
         <MediaPicker initial={[]} onClose={() => setPicker(null)} onPick={(ids) => { const p = picker.peca; setPicker(null); if (ids[0]) setBg({ origem: "pasta", peca: p, mediaId: ids[0].id }); }} />
       )}
-      {picker?.kind === "pexels" && chosen && (
-        <StockPicker initialQuery={chosen.data.pecas[picker.peca]?.busca_imagem ?? ""} video={c.format === "reels"} onClose={() => setPicker(null)}
-          onPick={(it) => { const p = picker.peca; setPicker(null); setBg({ origem: "pexels", peca: p, pexelsId: it.id, tipo: it.tipo }); }} />
+      {picker?.kind === "banco" && chosen && v.banco && (
+        <StockPicker banco={v.banco} initialQuery={chosen.data.pecas[picker.peca]?.busca_imagem ?? ""} video={c.format === "reels"} onClose={() => setPicker(null)}
+          onPick={(it) => { const p = picker.peca; setPicker(null); setBg({ origem: "banco", peca: p, bancoId: it.id, tipo: it.tipo }); }} />
       )}
       {posting && chosen && (
         <NewPost initialMedia={c.output_media_ids.map((m, i) => ({ id: m, label: `Criação · ${i + 1} · ${c.format === "reels" ? "vídeo" : "foto"}` }))}

@@ -5,11 +5,13 @@ import { aiEnabled, AI_OFF_MESSAGE } from "@/lib/ai";
 import { AppError } from "@/lib/errors";
 import { FORMATS } from "@/lib/criar/schemas";
 import { createCreation, listCreations } from "@/lib/criar/service";
-import { pexelsEnabled } from "@/lib/criar/pexels";
+import { stockSource, STOCK_LABEL } from "@/lib/criar/stock";
+
+const bankLabel = () => { const s = stockSource(); return s ? STOCK_LABEL[s] : null; };
 
 export const GET = route(async () => {
   const brand = await getBrand();
-  return json({ creations: await listCreations(brand.id), aiEnabled: aiEnabled(), pexels: pexelsEnabled(), hasLogo: !!brand.logo_file_key });
+  return json({ creations: await listCreations(brand.id), aiEnabled: aiEnabled(), banco: bankLabel(), hasLogo: !!brand.logo_file_key });
 });
 
 const Body = z.object({ format: z.enum(FORMATS), tema: z.string().max(600).default("") });

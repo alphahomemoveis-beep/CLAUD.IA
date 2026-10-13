@@ -94,7 +94,7 @@ Tela 🎬 **Criar conteúdo** (`/criar`):
 3. Se nenhuma servir, a pessoa pede outras 3 (dizendo o que mudar, se quiser). As rodadas se repetem até uma
    ser escolhida. As novas rodadas reusam a pesquisa da primeira para gastar menos da cota.
 4. Com a opção escolhida: a logo é enviada uma vez e fica salva na marca. O fundo de cada peça vem de um envio,
-   das Pastas ou do Pexels (fotos e vídeos gratuitos). Sem fundo, entra a madeira com luz de LED da marca.
+   das Pastas ou de um banco gratuito de fotos e vídeos (Pixabay ou Pexels). Sem fundo, entra a madeira com luz de LED da marca.
 5. O app monta as artes 4:5 ou 9:16 (satori, resvg e sharp) ou o vídeo do Reels (ffmpeg): zoom lento nas fotos,
    texto entrando com desfoque, cortes secos e encerramento com o ícone do Instagram e o @. O áudio fica mudo
    para a pessoa escolher o som em alta no próprio Instagram.
@@ -173,7 +173,7 @@ O passo a passo para publicar está em [DEPLOY.md](DEPLOY.md).
 ## Limitações conhecidas
 
 - Nenhuma integração externa foi testada com chave real neste ambiente: não havia chaves da Anthropic, do
-  Gemini nem do Pexels, e a rede bloqueava o Metricool, o Google e o Pexels. Todo o fluxo foi testado com o provedor de teste, e as falhas das integrações aparecem
+  Gemini, do Pixabay nem do Pexels, e a rede bloqueava o Metricool, o Google, o Pixabay e o Pexels. Todo o fluxo foi testado com o provedor de teste, e as falhas das integrações aparecem
   com mensagem clara.
 - Os endpoints do Metricool seguem a documentação pública e um cliente de código aberto. Os nomes das séries de
   métricas variam por conta: ajuste `METRICOOL_TIMELINE_METRICS` se o jornal não trouxer dados do Metricool.
