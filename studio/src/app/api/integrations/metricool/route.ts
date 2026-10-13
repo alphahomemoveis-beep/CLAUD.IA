@@ -10,7 +10,7 @@ export const GET = route(async ({ req }) => {
   const cfg = metricoolConfig(brand.integrations?.metricool_blog_id);
   const e = env();
   const status = {
-    ai: { provider: e.AI_PROVIDER, keySet: e.AI_PROVIDER === "anthropic" ? !!e.ANTHROPIC_API_KEY : e.AI_PROVIDER === "openai" ? !!e.OPENAI_API_KEY : true },
+    ai: { provider: e.AI_PROVIDER, keySet: e.AI_PROVIDER === "anthropic" ? !!e.ANTHROPIC_API_KEY : e.AI_PROVIDER === "gemini" ? !!e.GEMINI_API_KEY : e.AI_PROVIDER === "openai" ? !!e.OPENAI_API_KEY : true },
     images: e.IMAGE_PROVIDER,
     embeddings: e.EMBEDDING_PROVIDER,
     metricool: { tokenSet: !!cfg, blogId: cfg?.blogId ?? null },

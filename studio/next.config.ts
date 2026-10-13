@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pg"],
+  serverExternalPackages: ["pg", "sharp", "@resvg/resvg-js", "ffmpeg-static"],
   poweredByHeader: false,
   async headers() {
     return [

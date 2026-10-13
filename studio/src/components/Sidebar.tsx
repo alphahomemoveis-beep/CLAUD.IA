@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 
 const NAV = [
+  { href: "/criar", label: "Criar conteúdo", icon: "🎬" },
   { href: "/", label: "Novo projeto", icon: "✨" },
   { href: "/conversas", label: "Conversas", icon: "💬" },
   { href: "/projetos", label: "Projetos", icon: "📁" },

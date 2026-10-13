@@ -9,9 +9,11 @@ const schema = z.object({
 
   // Cérebro do estúdio: texto, visão, pesquisa e conversa da agenda.
   // "none" = IA desligada: o app liga e o que não depende de IA funciona.
-  // Sem AI_PROVIDER definido, usa o Claude se houver chave; senão, desligada.
-  AI_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["anthropic", "openai", "mock", "none"]).optional()),
+  // Sem AI_PROVIDER definido: Claude se houver ANTHROPIC_API_KEY, senão Gemini
+  // (faixa gratuita) se houver GEMINI_API_KEY, senão desligada.
+  AI_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["anthropic", "gemini", "openai", "mock", "none"]).optional()),
   ANTHROPIC_API_KEY: optional,
+  GEMINI_API_KEY: optional,
   OPENAI_API_KEY: optional,
   AI_TEXT_MODEL: optional,
   AI_VISION_MODEL: optional,
@@ -45,9 +47,14 @@ const schema = z.object({
   METRICOOL_USER_ID: optional,
   METRICOOL_BLOG_ID: optional,
   WINDSOR_API_KEY: optional,
+
+  // Banco de fotos e vídeos gratuitos para os fundos das artes (pexels.com/api).
+  PEXELS_API_KEY: optional,
+  // Caminho do ffmpeg para montar os vídeos. Sem ele, usa o que vem no app.
+  FFMPEG_PATH: optional,
 });
 
-export type ServerEnv = Omit<z.infer<typeof schema>, "AI_PROVIDER"> & { AI_PROVIDER: "anthropic" | "openai" | "mock" | "none" };
+export type ServerEnv = Omit<z.infer<typeof schema>, "AI_PROVIDER"> & { AI_PROVIDER: "anthropic" | "gemini" | "openai" | "mock" | "none" };
 
 let cached: ServerEnv | null = null;
 
@@ -59,9 +66,10 @@ export function env(): ServerEnv {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Configuração inválida: ${issues}`);
   }
-  const e = { ...parsed.data, AI_PROVIDER: parsed.data.AI_PROVIDER ?? (parsed.data.ANTHROPIC_API_KEY ? "anthropic" : "none") } as const;
+  const e = { ...parsed.data, AI_PROVIDER: parsed.data.AI_PROVIDER ?? (parsed.data.ANTHROPIC_API_KEY ? "anthropic" : parsed.data.GEMINI_API_KEY ? "gemini" : "none") } as const;
   const need = (cond: boolean, msg: string) => { if (cond) throw new Error(msg); };
   need(e.AI_PROVIDER === "anthropic" && !e.ANTHROPIC_API_KEY, "ANTHROPIC_API_KEY é obrigatória quando AI_PROVIDER=anthropic");
+  need(e.AI_PROVIDER === "gemini" && !e.GEMINI_API_KEY, "GEMINI_API_KEY é obrigatória quando AI_PROVIDER=gemini");
   need(e.AI_PROVIDER === "openai" && !e.OPENAI_API_KEY, "OPENAI_API_KEY é obrigatória quando AI_PROVIDER=openai");
   need(e.IMAGE_PROVIDER === "openai" && !e.OPENAI_API_KEY, "OPENAI_API_KEY é obrigatória quando IMAGE_PROVIDER=openai");
   need(e.EMBEDDING_PROVIDER === "voyage" && !e.VOYAGE_API_KEY, "VOYAGE_API_KEY é obrigatória quando EMBEDDING_PROVIDER=voyage");
@@ -75,7 +83,7 @@ export function env(): ServerEnv {
 
 /** Modelos padrão de cada provedor de texto. */
 export function defaultTextModel(provider: ServerEnv["AI_PROVIDER"]) {
-  return provider === "anthropic" ? "claude-opus-5-5" : provider === "openai" ? "gpt-5.5" : provider === "none" ? "desligada" : "mock";
+  return provider === "anthropic" ? "claude-opus-5-5" : provider === "gemini" ? "gemini-flash-latest" : provider === "openai" ? "gpt-5.5" : provider === "none" ? "desligada" : "mock";
 }
 
 export function defaultEmbeddingModel(provider: ServerEnv["EMBEDDING_PROVIDER"]) {

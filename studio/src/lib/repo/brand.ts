@@ -47,7 +47,8 @@ export interface Brand {
 function compatible(model: string | undefined, provider: string) {
   if (!model) return undefined;
   if (provider === "anthropic") return model.startsWith("claude-") ? model : undefined;
-  if (provider === "openai") return model.startsWith("claude-") ? undefined : model;
+  if (provider === "gemini") return model.startsWith("gemini-") ? model : undefined;
+  if (provider === "openai") return model.startsWith("claude-") || model.startsWith("gemini-") ? undefined : model;
   return model;
 }
 

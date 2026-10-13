@@ -15,12 +15,15 @@ function tomorrowAt(h: number) {
 }
 
 /** Post feito à mão, sem IA. Nasce como rascunho, igual aos da IA. */
-export function NewPost({ initialMedia, onClose, onCreated }: {
-  initialMedia: Array<{ id: string; label: string }>; onClose: () => void; onCreated: (p: Post) => void;
+export function NewPost({ initialMedia, initial, onClose, onCreated }: {
+  initialMedia: Array<{ id: string; label: string }>;
+  /** Tipo, legenda e hashtags já prontos (vindos da tela Criar conteúdo). */
+  initial?: { type: Post["post_type"]; caption: string; hashtags: string };
+  onClose: () => void; onCreated: (p: Post) => void;
 }) {
   const [media, setMedia] = useState(initialMedia);
   const [picking, setPicking] = useState(initialMedia.length === 0);
-  const [f, setF] = useState({ localDateTime: tomorrowAt(10), type: "REEL" as Post["post_type"], caption: "", hashtags: "#moveisplanejados #marcenaria #altopadrao", firstComment: "", networks: ["instagram"] });
+  const [f, setF] = useState({ localDateTime: tomorrowAt(10), type: initial?.type ?? ("REEL" as Post["post_type"]), caption: initial?.caption ?? "", hashtags: initial?.hashtags ?? "#moveisplanejados #marcenaria #altopadrao", firstComment: "", networks: ["instagram"] });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const total = f.caption.length + f.hashtags.length + 2;

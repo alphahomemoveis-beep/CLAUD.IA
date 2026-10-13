@@ -84,6 +84,25 @@ Migração em `db/migrations/001_init.sql`. Tabelas pedidas no briefing:
 
 Todas as tabelas de conteúdo apontam para `brand_settings`, o que prepara o app para mais de uma marca.
 
+## Criar conteúdo
+
+Tela 🎬 **Criar conteúdo** (`/criar`):
+
+1. A pessoa escolhe o formato: Reels, post do feed, Story, roteiro de vídeo ou carrossel. O tema é opcional.
+2. A IA pesquisa na web o que está viralizando no Instagram nesses nichos e traz **3 opções**, cada uma com
+   gancho, motivo para funcionar, peças (cenas ou páginas), legenda, hashtags e áudio sugerido.
+3. Se nenhuma servir, a pessoa pede outras 3 (dizendo o que mudar, se quiser). As rodadas se repetem até uma
+   ser escolhida. As novas rodadas reusam a pesquisa da primeira para gastar menos da cota.
+4. Com a opção escolhida: a logo é enviada uma vez e fica salva na marca. O fundo de cada peça vem de um envio,
+   das Pastas ou do Pexels (fotos e vídeos gratuitos). Sem fundo, entra a madeira com luz de LED da marca.
+5. O app monta as artes 4:5 ou 9:16 (satori, resvg e sharp) ou o vídeo do Reels (ffmpeg): zoom lento nas fotos,
+   texto entrando com desfoque, cortes secos e encerramento com o ícone do Instagram e o @. O áudio fica mudo
+   para a pessoa escolher o som em alta no próprio Instagram.
+6. O resultado vai para Pastas > Criações do app e pode virar rascunho na Agenda com a legenda pronta.
+
+O roteiro de vídeo e o Reels trazem a tabela de falas para a apresentadora gravar. Gerar vídeo com IA (de texto
+para vídeo) não está incluído: não há opção gratuita estável hoje.
+
 ## Agenda, Metricool e Windsor.ai
 
 - **Rascunho antes de publicar:** a IA só cria rascunhos. Publicar, alterar um post já agendado e cancelar
@@ -146,15 +165,15 @@ O passo a passo para publicar está em [DEPLOY.md](DEPLOY.md).
 
 | Uso | Variável | Padrão |
 |---|---|---|
-| Texto, planejamento, pesquisa, agenda e jornal | `AI_TEXT_MODEL` | `claude-opus-5-5` |
+| Texto, planejamento, pesquisa, agenda e jornal | `AI_TEXT_MODEL` | `claude-opus-5-5` (Claude) ou `gemini-flash-latest` (Gemini, grátis) |
 | Análise de referências | `AI_VISION_MODEL` | igual ao de texto |
 | Imagem (só com `IMAGE_PROVIDER=openai`) | `AI_IMAGE_MODEL` | `gpt-image-2.5-sunburst` |
 | Embeddings (só com `EMBEDDING_PROVIDER=voyage`) | `AI_EMBEDDING_MODEL` | `voyage-3.5` |
 
 ## Limitações conhecidas
 
-- Nenhuma integração externa foi testada com chave real neste ambiente: não havia chave da Anthropic, e a rede
-  bloqueava o Metricool. Todo o fluxo foi testado com o provedor de teste, e as falhas das integrações aparecem
+- Nenhuma integração externa foi testada com chave real neste ambiente: não havia chaves da Anthropic, do
+  Gemini nem do Pexels, e a rede bloqueava o Metricool, o Google e o Pexels. Todo o fluxo foi testado com o provedor de teste, e as falhas das integrações aparecem
   com mensagem clara.
 - Os endpoints do Metricool seguem a documentação pública e um cliente de código aberto. Os nomes das séries de
   métricas variam por conta: ajuste `METRICOOL_TIMELINE_METRICS` se o jornal não trouxer dados do Metricool.
