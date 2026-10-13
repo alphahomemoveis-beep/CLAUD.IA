@@ -9,6 +9,7 @@ const BASE = "https://generativelanguage.googleapis.com/v1beta";
 interface Part {
   text?: string;
   inlineData?: { mimeType: string; data: string };
+  fileData?: { fileUri: string; mimeType?: string };
   functionCall?: { name: string; args?: Record<string, unknown> };
   functionResponse?: { name: string; response: Record<string, unknown> };
   thought?: boolean;
@@ -133,12 +134,13 @@ export class GeminiProvider implements TextProvider {
     return (res.candidates?.[0]?.content?.parts ?? []).filter((p) => p.text && !p.thought).map((p) => p.text).join("");
   }
 
-  private contents(req: { messages: StructuredRequest<unknown>["messages"]; images?: StructuredRequest<unknown>["images"] }): Content[] {
+  private contents(req: { messages: StructuredRequest<unknown>["messages"]; images?: StructuredRequest<unknown>["images"]; videoUrl?: string }): Content[] {
     return req.messages.map((m, i) => {
       const parts: Part[] = [];
       if (m.role === "user" && i === req.messages.length - 1 && req.images?.length) {
         for (const img of req.images) parts.push({ inlineData: { mimeType: img.mime, data: img.data.toString("base64") } });
       }
+      if (m.role === "user" && i === req.messages.length - 1 && req.videoUrl) parts.push({ fileData: { fileUri: req.videoUrl } });
       parts.push({ text: m.text });
       return { role: m.role === "assistant" ? "model" : "user", parts };
     });

@@ -26,6 +26,8 @@ export interface StructuredRequest<T> {
   system: string;
   messages: ChatTurn[];
   images?: InputImage[];
+  /** Vídeo público do YouTube para a IA assistir (só o Gemini aceita). */
+  videoUrl?: string;
   webSearch?: boolean;
   model: string;
   effort?: Effort;

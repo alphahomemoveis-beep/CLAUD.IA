@@ -35,6 +35,8 @@ export interface Creation {
   chosen_option_id: string | null;
   backgrounds: Background[];
   output_media_ids: string[];
+  /** Preenchido quando a criação nasceu de um vídeo de inspiração. */
+  inspiration: { origem: "arquivo" | "youtube"; file_key?: string; url?: string; total?: number; shots?: Array<{ inicio: number; fim: number; duracao: number }>; estilo?: string; por_que_funciona?: string } | null;
   created_at: string;
   updated_at: string;
 }
@@ -116,6 +118,9 @@ export async function createCreation(brand: Brand, userId: string, format: Forma
 
 /** Pede 3 opções novas. Só quando ninguém escolheu ainda ou a pessoa voltou atrás. */
 export async function requestNewRound(brand: Brand, userId: string, id: string, pedido: string) {
+  if ((await getCreation(id, brand.id))?.inspiration) {
+    throw new CreationError("Esta criação segue um vídeo de inspiração. Para outra versão, comece de novo com a inspiração.");
+  }
   const c = await queryOne<Creation>(
     `UPDATE content_creations SET status = 'pesquisando', error = NULL, updated_at = now()
       WHERE id = $1 AND brand_id = $2 AND status IN ('opcoes', 'escolhida', 'pronto', 'falhou') RETURNING *`,

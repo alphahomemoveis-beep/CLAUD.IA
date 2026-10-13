@@ -156,7 +156,7 @@ describe("criar conteúdo: artes", () => {
     expect(brandHandle({})).toBe("alphahome.moveis");
   });
   it("a camada de texto sai transparente e no tamanho do formato", async () => {
-    const png = await overlayPng({ w: 1080, h: 1350, peca: { titulo: "2º ponto", apoio: "fita de LED", texto: "Acende ao abrir.", fala: "", imagem: "", busca_imagem: "", duracao_s: 0 }, index: 1, total: 5, format: "carrossel", handle: "alphahome.moveis" });
+    const png = await overlayPng({ w: 1080, h: 1350, peca: { titulo: "2º ponto", apoio: "fita de LED", texto: "Acende ao abrir.", fala: "", imagem: "", busca_imagem: "", duracao_s: 0, como_filmar: "" }, index: 1, total: 5, format: "carrossel", handle: "alphahome.moveis" });
     const meta = await sharp(png).metadata();
     expect([meta.width, meta.height, meta.hasAlpha]).toEqual([1080, 1350, true]);
   });
