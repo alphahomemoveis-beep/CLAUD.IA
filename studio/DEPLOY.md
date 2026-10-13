@@ -59,9 +59,10 @@ jornal ficam desligados, e dá para usar o Claude no chat para essas tarefas.
 3. Na faixa gratuita, o Google pode usar os pedidos para melhorar os produtos dele. Não mande dados sigilosos.
 4. O modelo padrão é `gemini-flash-latest`. Se o Google trocar o nome, ajuste `AI_TEXT_MODEL`.
 
-**Fotos grátis para os fundos: Pexels.** Crie uma conta em pexels.com, abra pexels.com/api, peça a chave (sai na
-hora) e cadastre `PEXELS_API_KEY` na Railway. Sem ela, você envia as fotos ou usa as das Pastas. O Pinterest não
-tem busca aberta para aplicativos, por isso não entra.
+**Fotos grátis para os fundos: Pixabay.** Crie uma conta em pixabay.com, abra pixabay.com/api/docs e copie a
+chave que aparece em **Parameters > key** (só aparece com a conta logada). Cadastre `PIXABAY_API_KEY` na Railway.
+O Pexels também funciona (`PEXELS_API_KEY`), mas suspendeu a emissão de chaves novas. Sem nenhuma das duas,
+você envia as fotos ou usa as das Pastas. O Pinterest não tem busca aberta para aplicativos, por isso não entra.
 
 **Pago: Claude, da Anthropic.** Se as duas chaves existirem, o app usa o Claude.
 
@@ -89,7 +90,7 @@ tem busca aberta para aplicativos, por isso não entra.
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | a string do Session pooler (passo 2) |
 | `GEMINI_API_KEY` | chave grátis do Google AI Studio (passo 3) |
-| `PEXELS_API_KEY` | chave grátis do Pexels, para buscar fundos (passo 3) |
+| `PIXABAY_API_KEY` | chave grátis do Pixabay, para buscar fundos (passo 3) |
 | `ANTHROPIC_API_KEY` | só se for usar o Claude pago (passo 3) |
 | `IMAGE_PROVIDER` | `manual` |
 | `EMBEDDING_PROVIDER` | `none` |

@@ -15,7 +15,8 @@ export type CreationStatus = "pesquisando" | "opcoes" | "escolhida" | "renderiza
 
 export interface Background {
   peca: number;
-  origem: "upload" | "pasta" | "pexels";
+  /** "pexels" ficou de criações antigas; hoje o banco de imagens grava "banco". */
+  origem: "upload" | "pasta" | "banco" | "pexels";
   file_key: string;
   media_type: "image" | "video";
   credito?: string;

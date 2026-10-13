@@ -6,8 +6,8 @@ import { Modal } from "../Modal";
 
 export interface StockItem { id: number; tipo: "foto" | "video"; thumb: string; autor: string; autor_url: string; pagina: string; duracao?: number }
 
-/** Busca de fotos e vídeos gratuitos no Pexels, com o crédito de cada autor. */
-export function StockPicker({ initialQuery, video, onClose, onPick }: { initialQuery: string; video: boolean; onClose: () => void; onPick: (it: StockItem) => void }) {
+/** Busca de fotos e vídeos gratuitos (Pixabay ou Pexels), com o crédito de cada autor. */
+export function StockPicker({ banco, initialQuery, video, onClose, onPick }: { banco: string; initialQuery: string; video: boolean; onClose: () => void; onPick: (it: StockItem) => void }) {
   const [q, setQ] = useState(initialQuery);
   const [tipo, setTipo] = useState<"foto" | "video">("foto");
   const [items, setItems] = useState<StockItem[] | null>(null);
@@ -29,7 +29,7 @@ export function StockPicker({ initialQuery, video, onClose, onPick }: { initialQ
   useEffect(() => { search(initialQuery, "foto"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Modal title="Buscar fundo no Pexels" onClose={onClose}>
+    <Modal title={`Buscar fundo no ${banco}`} onClose={onClose}>
       <form className="row" onSubmit={(e) => { e.preventDefault(); search(); }}>
         <input className="input" style={{ flex: 1, minWidth: 0 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Em inglês funciona melhor: walnut kitchen" aria-label="Busca" />
         <button className="btn">Buscar</button>
@@ -45,7 +45,7 @@ export function StockPicker({ initialQuery, video, onClose, onPick }: { initialQ
         <div className="lib-grid" style={{ marginTop: 12, gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", maxHeight: 400, overflowY: "auto", gap: 10 }}>
           {items.length === 0 && <div className="empty">Nada encontrado. Tente outras palavras.</div>}
           {items.map((it) => (
-            <button key={`${it.tipo}-${it.id}`} className="ref-card" onClick={() => onPick(it)} title={`${it.autor} no Pexels`}>
+            <button key={`${it.tipo}-${it.id}`} className="ref-card" onClick={() => onPick(it)} title={`${it.autor} no ${banco}`}>
               <div className="thumb" style={{ aspectRatio: "9 / 14" }}>
                 <img src={it.thumb} alt="" loading="lazy" referrerPolicy="no-referrer" />
                 {it.tipo === "video" && <span className="video-badge">▶ {it.duracao}s</span>}
@@ -56,7 +56,7 @@ export function StockPicker({ initialQuery, video, onClose, onPick }: { initialQ
         </div>
       )}
       <div className="tiny muted" style={{ marginTop: 10 }}>
-        Fotos e vídeos gratuitos do <a href="https://www.pexels.com" target="_blank" rel="noreferrer">Pexels</a>. O crédito do autor fica salvo na criação.
+        Fotos e vídeos gratuitos do <a href={banco === "Pixabay" ? "https://pixabay.com" : "https://www.pexels.com"} target="_blank" rel="noreferrer">{banco}</a>. O crédito do autor fica salvo na criação.
       </div>
     </Modal>
   );

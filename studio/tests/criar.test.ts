@@ -9,7 +9,7 @@ import { OpcoesSchema } from "@/lib/criar/schemas";
 import { FORMAT_INFO, FORMATS } from "@/lib/criar/formats";
 import { formatBrief, newRoundRequest, researchRequest } from "@/lib/criar/prompts";
 import { brandHandle, overlayPng, titleSize } from "@/lib/criar/render";
-import { pickVideoFile } from "@/lib/criar/pexels";
+import { downloadStock, pickPixabayVideo, pickVideoFile, searchStock, stockSource } from "@/lib/criar/stock";
 import sharp from "sharp";
 
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
@@ -110,5 +110,37 @@ describe("criar conteúdo: artes", () => {
       { quality: "uhd", file_type: "video/mp4", width: 2160, height: 3840, link: "c" },
     ]);
     expect(f?.link).toBe("b");
+  });
+});
+
+describe("criar conteúdo: Pixabay", () => {
+  process.env.DATABASE_URL ??= "postgres://x@localhost/x";
+  process.env.PIXABAY_API_KEY = "chave-pixabay";
+  const img = { id: 7, pageURL: "https://pixabay.com/photos/cozinha-7/", previewURL: "https://cdn.pixabay.com/p.jpg", webformatURL: "https://pixabay.com/get/w.jpg",
+    largeImageURL: "https://pixabay.com/get/l.jpg", imageWidth: 4000, imageHeight: 6000, user: "Ana", user_id: 12 };
+
+  it("o Pixabay tem prioridade quando há chave", () => expect(stockSource()).toBe("pixabay"));
+
+  it("busca fotos verticais e devolve o crédito do autor", async () => {
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => { urls.push(u); return ok({ hits: [img] }); }));
+    const r = await searchStock("cozinha madeira", "foto");
+    expect(r[0]).toMatchObject({ id: 7, tipo: "foto", autor: "Ana", autor_url: "https://pixabay.com/users/Ana-12/", pagina: img.pageURL });
+    const q = new URL(urls[0]).searchParams;
+    expect([q.get("key"), q.get("q"), q.get("orientation"), q.get("image_type")]).toEqual(["chave-pixabay", "cozinha madeira", "vertical", "photo"]);
+  });
+
+  it("baixa pelo id, só de endereços do Pixabay", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => (u.includes("/api/") ? ok({ hits: [img] }) : new Response(new Uint8Array([1, 2, 3])))));
+    const r = await downloadStock(7, "foto");
+    expect([r.source, r.data.length]).toEqual(["pixabay", 3]);
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => (u.includes("/api/") ? ok({ hits: [{ ...img, largeImageURL: "https://malicioso.example/x.jpg" }] }) : new Response("x"))));
+    await expect(downloadStock(7, "foto")).rejects.toThrow(/inesperado/);
+  });
+
+  it("escolhe o maior vídeo que não passe de 4K", () => {
+    const v = (w: number, h: number, url: string) => ({ url, width: w, height: h, size: 1 });
+    expect(pickPixabayVideo({ large: v(4096, 2160, "4k+"), medium: v(1920, 1080, "hd"), small: v(1280, 720, "s"), tiny: v(960, 540, "t") })?.url).toBe("hd");
+    expect(pickPixabayVideo({ large: v(3840, 2160, "4k"), medium: v(1920, 1080, "hd"), small: v(1280, 720, "s"), tiny: v(960, 540, "t") })?.url).toBe("4k");
   });
 });

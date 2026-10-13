@@ -10,7 +10,7 @@ import { newKey, storage } from "../storage";
 import type { Brand } from "../repo/brand";
 import { FORMAT_INFO, type Peca } from "./schemas";
 import { brandBackground, brandHandle, composeStill, coverImage, endCardPng, ffmpegPath, logoDataUri, overlayPng, renderReel, SIZE, type Scene } from "./render";
-import { downloadStock, pexelsEnabled, searchStock } from "./pexels";
+import { downloadStock, searchStock, stockSource, STOCK_LABEL } from "./stock";
 import { background, chosenOption, CreationError, getCreation, setBackground, type Background, type Creation } from "./service";
 
 const ROOT_FOLDER = "Criações do app";
@@ -119,16 +119,16 @@ export async function storeBackground(brandId: string, id: string, peca: number,
   return setBackground(brandId, id, peca, { peca, file_key: key, media_type: kind, ...extra });
 }
 
-export async function backgroundFromPexels(brandId: string, id: string, peca: number, pexelsId: number, tipo: "foto" | "video") {
-  const { data, item } = await downloadStock(pexelsId, tipo);
+export async function backgroundFromStock(brandId: string, id: string, peca: number, stockId: number, tipo: "foto" | "video") {
+  const { data, item, source } = await downloadStock(stockId, tipo);
   return storeBackground(brandId, id, peca, data, tipo === "video" ? "video/mp4" : "image/jpeg", tipo === "video" ? "video" : "image", {
-    origem: "pexels", credito: `${item.autor} no Pexels`, credito_url: item.pagina,
+    origem: "banco", credito: `${item.autor} no ${STOCK_LABEL[source]}`, credito_url: item.pagina,
   });
 }
 
-/** Completa as peças sem fundo com a primeira foto do Pexels para a busca sugerida pela IA. */
+/** Completa as peças sem fundo com a primeira foto do banco de imagens para a busca sugerida pela IA. */
 export async function autoBackgrounds(brandId: string, id: string) {
-  if (!pexelsEnabled()) throw new AppError(503, "Para buscar fotos sozinho, cadastre PEXELS_API_KEY (grátis em pexels.com/api). Ou envie suas fotos, ou gere com o fundo da marca.", "pexels_desligado");
+  if (!stockSource()) throw new AppError(503, "Para buscar fotos sozinho, cadastre PIXABAY_API_KEY (grátis em pixabay.com/api/docs). Ou envie suas fotos, ou gere com o fundo da marca.", "banco_desligado");
   const c = await getCreation(id, brandId);
   if (!c) throw notFound("Criação não encontrada.");
   const opt = await chosenOption(c);
@@ -141,7 +141,7 @@ export async function autoBackgrounds(brandId: string, id: string) {
     const pick = found.find((f) => !used.has(f.pagina));
     if (!pick) continue;
     used.add(pick.pagina);
-    list = await backgroundFromPexels(brandId, id, i, pick.id, "foto");
+    list = await backgroundFromStock(brandId, id, i, pick.id, "foto");
   }
   return list;
 }

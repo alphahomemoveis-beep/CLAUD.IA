@@ -48,8 +48,9 @@ const schema = z.object({
   METRICOOL_BLOG_ID: optional,
   WINDSOR_API_KEY: optional,
 
-  // Banco de fotos e vídeos gratuitos para os fundos das artes (pexels.com/api).
-  PEXELS_API_KEY: optional,
+  // Bancos de fotos e vídeos gratuitos para os fundos das artes. Com os dois, usa o Pixabay.
+  PIXABAY_API_KEY: optional, // pixabay.com/api/docs
+  PEXELS_API_KEY: optional, // pexels.com/api
   // Caminho do ffmpeg para montar os vídeos. Sem ele, usa o que vem no app.
   FFMPEG_PATH: optional,
 });
