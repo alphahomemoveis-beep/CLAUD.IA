@@ -61,11 +61,13 @@ export class GeminiProvider implements TextProvider {
       if (res.ok) return (await res.json()) as GenerateResponse;
       lastErr = (await res.text()).slice(0, 500);
       if (res.status === 429) {
+        if (/limit:\s*0\b/.test(lastErr)) throw new AIError("O Google não liberou a faixa gratuita para o projeto dessa chave. No Google AI Studio, crie a chave num projeto novo.", "indisponivel");
         if (attempt < 2) { await new Promise((r) => setTimeout(r, 4000 * (attempt + 1))); continue; }
         throw new AIError("O limite gratuito diário do Gemini acabou. Tente de novo mais tarde ou amanhã.", "limite");
       }
       if (res.status >= 500 && attempt < 2) { await new Promise((r) => setTimeout(r, 2000 * (attempt + 1))); continue; }
       if (res.status === 400 && /api key/i.test(lastErr)) throw new AIError("A chave do Gemini (GEMINI_API_KEY) é inválida.", "indisponivel");
+      if (res.status === 401) throw new AIError("O Gemini recusou a chave (GEMINI_API_KEY). Crie uma chave nova no Google AI Studio e troque na Railway.", "indisponivel");
       if (res.status === 403) throw new AIError("O Gemini recusou a chave (GEMINI_API_KEY). Confira se ela foi criada no Google AI Studio.", "indisponivel");
       if (res.status === 404) throw new AIError(`O modelo ${model} não existe no Gemini. Ajuste AI_TEXT_MODEL.`, "indisponivel");
       break;

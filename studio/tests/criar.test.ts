@@ -51,6 +51,22 @@ describe("Gemini (opção gratuita)", () => {
     expect(r.toolCalls[0]).toMatchObject({ name: "somar", output: { total: 5 } });
   });
 
+  it("manda a chave nova (AQ.) no cabeçalho, nunca na URL", async () => {
+    const seen: Array<{ url: string; headers: Record<string, string> }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => { seen.push({ url, headers: init.headers as Record<string, string> }); return textResp("{}"); }));
+    await new GeminiProvider("AQ.chave-nova").structured({ schemaName: "x", schema: z.object({}), system: "", messages: [{ role: "user", text: "a" }], model: "m" });
+    expect(seen[0].url).not.toContain("key=");
+    expect(seen[0].headers["x-goog-api-key"]).toBe("AQ.chave-nova");
+  });
+
+  it("chave recusada (401) e projeto sem faixa grátis viram mensagens claras", async () => {
+    const call = () => new GeminiProvider("k").structured({ schemaName: "x", schema: z.object({}), system: "", messages: [{ role: "user", text: "a" }], model: "m" });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("ACCESS_TOKEN_TYPE_UNSUPPORTED", { status: 401 })));
+    await expect(call()).rejects.toThrow(/Crie uma chave nova/);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("Quota exceeded, limit: 0", { status: 429 })));
+    await expect(call()).rejects.toThrow(/faixa gratuita para o projeto/);
+  });
+
   it("limite gratuito esgotado vira mensagem clara", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn(async () => new Response("quota", { status: 429 })));
