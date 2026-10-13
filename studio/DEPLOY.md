@@ -158,6 +158,8 @@ você envia as fotos ou usa as das Pastas. O Pinterest não tem busca aberta par
 |---|---|
 | Deploy falha com "Falha no certificado do banco" | o Supabase trocou o certificado: baixe o novo em Database > Settings > SSL Configuration e cole em `DATABASE_CA_CERT`. Como último recurso, acrescente `?sslmode=no-verify` ao fim do `DATABASE_URL` (continua criptografado, mas sem verificar o servidor) |
 | Deploy falha com "password authentication failed" | senha errada no `DATABASE_URL` |
+| A tela de login diz "O app não conseguiu falar com o banco" | siga o que o próprio aviso diz; ele também aparece em `/api/saude` |
+| Variável com nome enorme, começando por `NODE_ENV=production` | a Railway no celular não separa um bloco colado; apague essa variável e crie uma por vez |
 | "ANTHROPIC_API_KEY é obrigatória" | `AI_PROVIDER` está como `anthropic` sem a chave; apague `AI_PROVIDER` |
 | "A IA do aplicativo está desligada" | é o esperado sem chave; cadastre `GEMINI_API_KEY` (grátis) para ligar |
 | "O limite gratuito diário do Gemini acabou" | a faixa grátis tem limite por dia; espere ou use o Claude |

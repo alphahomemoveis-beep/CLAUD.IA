@@ -35,3 +35,18 @@ describe("conexão com o banco em produção", () => {
     expect(pem.trim()).toMatch(/-----END CERTIFICATE-----$/);
   });
 });
+
+import { diagnoseDbError } from "../scripts/db-diagnose.mjs";
+
+describe("diagnóstico do banco na tela de login", () => {
+  const url = "postgresql://postgres.abc:Senha123@aws-0-sa-east-1.pooler.supabase.com:5432/postgres";
+  it("explica cada falha comum sem mostrar a senha", () => {
+    expect(diagnoseDbError(new Error("x"), "")).toMatch(/DATABASE_URL está vazia/);
+    expect(diagnoseDbError(new Error("x"), url.replace("Senha123", "[YOUR-PASSWORD]"))).toMatch(/YOUR-PASSWORD/);
+    expect(diagnoseDbError(Object.assign(new Error("password authentication failed for user"), { code: "28P01" }), url)).toMatch(/recusou a senha/);
+    expect(diagnoseDbError(new Error("Tenant or user not found"), url)).toMatch(/não reconheceu o usuário/);
+    expect(diagnoseDbError(new Error("self-signed certificate in certificate chain"), url)).toMatch(/sslmode=no-verify/);
+    expect(diagnoseDbError(Object.assign(new Error("getaddrinfo"), { code: "ENOTFOUND" }), url)).toMatch(/não existe/);
+    expect(diagnoseDbError(new Error(`falhou em ${url}`), url)).not.toContain("Senha123");
+  });
+});
