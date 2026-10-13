@@ -5,12 +5,12 @@ import { api } from "@/lib/client";
 import { DbStatus } from "@/components/DbStatus";
 
 export default function FirstAccessPage() {
-  const [needed, setNeeded] = useState<boolean | null>(null);
+  const [needed, setNeeded] = useState<boolean | "erro" | null>(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { api<{ needed: boolean }>("/api/auth/setup").then((d) => setNeeded(d.needed)).catch(() => setNeeded(false)); }, []);
+  useEffect(() => { api<{ needed: boolean }>("/api/auth/setup").then((d) => setNeeded(d.needed)).catch(() => setNeeded("erro")); }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,8 +38,8 @@ export default function FirstAccessPage() {
         <blockquote>Crie a conta do dono. Depois, em Configurações, você convida gerentes e outros donos.</blockquote>
         <div className="small" style={{ color: "#9c9185" }}>Esta tela só funciona uma vez.</div>
       </div>
-      <div className="login-form">
-        <DbStatus />
+      <div className="login-form" style={{ flexDirection: "column" }}>
+        <div style={{ width: "100%", maxWidth: 360 }}><DbStatus /></div>
         {needed === null && <span className="spinner" />}
         {needed === false && (
           <div className="stack" style={{ maxWidth: 360 }}>
@@ -48,7 +48,7 @@ export default function FirstAccessPage() {
             <a className="btn btn-primary" href="/login">Ir para o login</a>
           </div>
         )}
-        {needed && (
+        {needed === true && (
           <form onSubmit={submit}>
             <div><div className="eyebrow">Primeiro acesso</div><h1 style={{ marginTop: 6 }}>Criar conta do dono</h1></div>
             {error && <div className="alert" role="alert">{error}</div>}

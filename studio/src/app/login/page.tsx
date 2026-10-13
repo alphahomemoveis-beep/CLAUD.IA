@@ -37,8 +37,8 @@ export default function LoginPage() {
         <blockquote>“Não é o ambiente que se adapta aos móveis, são os móveis que se adaptam ao cliente.”</blockquote>
         <div className="small" style={{ color: "#9c9185" }}>A IA propõe. Você escolhe. A IA executa.</div>
       </div>
-      <div className="login-form">
-        <DbStatus />
+      <div className="login-form" style={{ flexDirection: "column" }}>
+        <div style={{ width: "100%", maxWidth: 360 }}><DbStatus /></div>
         <form onSubmit={submit}>
           <div>
             <div className="eyebrow">Acesso privado</div>
